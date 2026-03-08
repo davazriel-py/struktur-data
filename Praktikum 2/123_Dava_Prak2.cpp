@@ -26,7 +26,6 @@ Service* rearQueue=NULL;
 Service* doneHead=NULL;
 
 
-// getTanggal
 string getTanggal(){
 
     time_t now=time(0);
@@ -42,7 +41,6 @@ string getTanggal(){
 }
 
 
-// enqueueService
 void enqueueService(Service* baru){
 
     if(frontQueue==NULL){
@@ -55,7 +53,6 @@ void enqueueService(Service* baru){
 }
 
 
-// addDone
 void addDone(Service* node){
 
     node->next=doneHead;
@@ -63,7 +60,6 @@ void addDone(Service* node){
 }
 
 
-// savePending
 void savePending(Service* data){
 
     ofstream file("pending_service.txt",ios::app);
@@ -81,7 +77,6 @@ void savePending(Service* data){
 }
 
 
-// saveDone
 void saveDone(Service* data){
 
     ofstream file("done_service.txt",ios::app);
@@ -99,7 +94,6 @@ void saveDone(Service* data){
 }
 
 
-// rewritePending
 void rewritePending(){
 
     ofstream file("pending_service.txt");
@@ -124,7 +118,6 @@ void rewritePending(){
 }
 
 
-// loadPending
 void loadPending(){
 
     ifstream file("pending_service.txt");
@@ -155,7 +148,6 @@ void loadPending(){
 }
 
 
-// loadDone
 void loadDone(){
 
     ifstream file("done_service.txt");
@@ -185,7 +177,6 @@ void loadDone(){
 }
 
 
-// tampilAntrian
 void tampilAntrian(){
 
     Service* scanner=frontQueue;
@@ -210,7 +201,6 @@ void tampilAntrian(){
 }
 
 
-// servisBaru
 void servisBaru(){
 
     Service* baru=new Service();
@@ -247,7 +237,6 @@ void servisBaru(){
 }
 
 
-// selesaiServis
 void selesaiServis(){
 
     string montir;
@@ -298,7 +287,6 @@ void selesaiServis(){
 }
 
 
-// riwayatCustomer
 void riwayatCustomer(){
 
     string nama;
@@ -333,7 +321,6 @@ void riwayatCustomer(){
 }
 
 
-// menuServis
 void menuServis(){
 
     cout<<"====== Services ======\n";
@@ -352,7 +339,6 @@ void menuServis(){
 }
 
 
-// main
 int main(){
 
     loadPending();
