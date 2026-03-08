@@ -1,6 +1,5 @@
 #include <iostream>
 #include <string>
-#include <ctime>
 #include <fstream>
 
 using namespace std;
@@ -24,21 +23,56 @@ Service* frontQueue=NULL;
 Service* rearQueue=NULL;
 Service* doneHead=NULL;
 
+bool customerExists(string nama){
 
-string getTanggal(){
+    ifstream file("cust.txt");
 
-    time_t now=time(0);
-    tm *ltm=localtime(&now);
+    if(!file.is_open()) return false;
 
-    int d=ltm->tm_mday;
-    int m=1+ltm->tm_mon;
-    int y=1900+ltm->tm_year;
+    string namaFile,telp;
 
-    string bulan[12]={"Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"};
+    while(getline(file,namaFile,'|')){
+        getline(file,telp);
 
-    return to_string(d)+"-"+bulan[m-1]+"-"+to_string(y);
+        if(namaFile==nama){
+            file.close();
+            return true;
+        }
+    }
+
+    file.close();
+    return false;
 }
 
+string getCustomerPhone(string nama){
+
+    ifstream file("cust.txt");
+
+    if(!file.is_open()) return "";
+
+    string namaFile,telp;
+
+    while(getline(file,namaFile,'|')){
+        getline(file,telp);
+
+        if(namaFile==nama){
+            file.close();
+            return telp;
+        }
+    }
+
+    file.close();
+    return "";
+}
+
+void saveCustomer(Customer data){
+
+    ofstream file("cust.txt",ios::app);
+
+    file<<data.nama<<"|"<<data.telp<<endl;
+
+    file.close();
+}
 
 void enqueueService(Service* baru){
 
@@ -51,17 +85,15 @@ void enqueueService(Service* baru){
     }
 }
 
-
 void addDone(Service* node){
 
     node->next=doneHead;
     doneHead=node;
 }
 
-
 void savePending(Service* data){
 
-    ofstream file("pending_service.txt",ios::app);
+    ofstream file("pending.txt",ios::app);
 
     file<<data->modelMobil<<"|"
         <<data->merekMobil<<"|"
@@ -74,11 +106,10 @@ void savePending(Service* data){
 
     file.close();
 }
-
 
 void saveDone(Service* data){
 
-    ofstream file("done_service.txt",ios::app);
+    ofstream file("done.txt",ios::app);
 
     file<<data->modelMobil<<"|"
         <<data->merekMobil<<"|"
@@ -92,10 +123,9 @@ void saveDone(Service* data){
     file.close();
 }
 
-
 void rewritePending(){
 
-    ofstream file("pending_service.txt");
+    ofstream file("pending.txt");
 
     Service* scanner=frontQueue;
 
@@ -116,25 +146,22 @@ void rewritePending(){
     file.close();
 }
 
-
 void loadPending(){
 
-    ifstream file("pending_service.txt");
+    ifstream file("pending.txt");
 
     if(!file.is_open()) return;
 
-    while(!file.eof()){
+    while(true){
 
         Service* baru=new Service();
 
-        getline(file,baru->modelMobil,'|');
-        if(file.eof()) break;
+        if(!getline(file,baru->modelMobil,'|')) break;
 
         getline(file,baru->merekMobil,'|');
         getline(file,baru->kendala,'|');
         getline(file,baru->montir,'|');
         getline(file,baru->tanggalMasuk,'|');
-
         getline(file,baru->dataCustomer.nama,'|');
         getline(file,baru->dataCustomer.telp);
 
@@ -146,25 +173,22 @@ void loadPending(){
     file.close();
 }
 
-
 void loadDone(){
 
-    ifstream file("done_service.txt");
+    ifstream file("done.txt");
 
     if(!file.is_open()) return;
 
-    while(!file.eof()){
+    while(true){
 
         Service* baru=new Service();
 
-        getline(file,baru->modelMobil,'|');
-        if(file.eof()) break;
+        if(!getline(file,baru->modelMobil,'|')) break;
 
         getline(file,baru->merekMobil,'|');
         getline(file,baru->kendala,'|');
         getline(file,baru->montir,'|');
         getline(file,baru->tanggalMasuk,'|');
-
         getline(file,baru->dataCustomer.nama,'|');
         getline(file,baru->dataCustomer.telp);
 
@@ -175,37 +199,38 @@ void loadDone(){
     file.close();
 }
 
+void pelangganBaru(){
 
-void tampilAntrian(){
+    Customer data;
 
-    Service* scanner=frontQueue;
+    cout<<"====== Pelanggan Baru ======\n";
 
-    cout<<"====== All Services ======\n";
+    cout<<"Nama Pelanggan: ";
+    getline(cin,data.nama);
 
-    while(scanner!=NULL){
-
-        cout<<"-----------------------\n";
-        cout<<"Model Mobil: "<<scanner->modelMobil<<endl;
-        cout<<"Merek Mobil: "<<scanner->merekMobil<<endl;
-        cout<<"Kendala: "<<scanner->kendala<<endl;
-        cout<<"Montir: "<<scanner->montir<<endl;
-        cout<<"Nama Pelanggan: "<<scanner->dataCustomer.nama<<endl;
-        cout<<"No Telp Pelanggan: "<<scanner->dataCustomer.telp<<endl;
-
-        scanner=scanner->next;
+    if(customerExists(data.nama)){
+        cout<<"Pelanggan sudah ada!\n";
+        cout<<"Press enter...";
+        cin.get();
+        return;
     }
 
-    cout<<"Press any key to go back ...";
+    cout<<"No Telp: ";
+    getline(cin,data.telp);
+
+    saveCustomer(data);
+
+    cout<<"Pelanggan berhasil ditambahkan!\n";
+    cout<<"Press enter...";
     cin.get();
 }
-
 
 void servisBaru(){
 
     Service* baru=new Service();
     baru->next=NULL;
 
-    cout<<"====== New Service ======\n";
+    cout<<"====== Servis Baru ======\n";
 
     cout<<"Model Mobil: ";
     getline(cin,baru->modelMobil);
@@ -222,25 +247,73 @@ void servisBaru(){
     cout<<"Nama Pelanggan: ";
     getline(cin,baru->dataCustomer.nama);
 
-    cout<<"No Telp Pelanggan: ";
-    getline(cin,baru->dataCustomer.telp);
+    if(customerExists(baru->dataCustomer.nama)){
 
-    baru->tanggalMasuk=getTanggal();
+        // jika pelanggan sudah ada
+        baru->dataCustomer.telp=getCustomerPhone(baru->dataCustomer.nama);
+
+        cout<<"Pelanggan sudah terdaftar.\n";
+        cout<<"No Telp: "<<baru->dataCustomer.telp<<endl;
+    }
+    else{
+
+        // pelanggan baru
+        cout<<"Pelanggan belum terdaftar.\n";
+        cout<<"Masukkan No Telp: ";
+        getline(cin,baru->dataCustomer.telp);
+
+        Customer data;
+        data.nama=baru->dataCustomer.nama;
+        data.telp=baru->dataCustomer.telp;
+
+        saveCustomer(data);
+
+        cout<<"Pelanggan baru berhasil disimpan.\n";
+    }
+
+    cout<<"Tanggal Masuk: ";
+    getline(cin,baru->tanggalMasuk);
 
     enqueueService(baru);
     savePending(baru);
 
-    cout<<"*Servis berhasil dicatat*\n";
-    cout<<"Press any key to go back ...";
+    cout<<"Servis berhasil dicatat!\n";
+    cout<<"Press enter...";
     cin.get();
 }
 
+void tampilAntrian(){
+
+    Service* scanner=frontQueue;
+
+    cout<<"====== All Services ======\n";
+
+    if(scanner==NULL)
+        cout<<"Tidak ada antrian servis.\n";
+
+    while(scanner!=NULL){
+
+        cout<<"-----------------------\n";
+        cout<<"Model Mobil: "<<scanner->modelMobil<<endl;
+        cout<<"Merek Mobil: "<<scanner->merekMobil<<endl;
+        cout<<"Kendala: "<<scanner->kendala<<endl;
+        cout<<"Montir: "<<scanner->montir<<endl;
+        cout<<"Tanggal Masuk: "<<scanner->tanggalMasuk<<endl;
+        cout<<"Nama Pelanggan: "<<scanner->dataCustomer.nama<<endl;
+        cout<<"No Telp: "<<scanner->dataCustomer.telp<<endl;
+
+        scanner=scanner->next;
+    }
+
+    cout<<"Press enter...";
+    cin.get();
+}
 
 void selesaiServis(){
 
     string montir;
 
-    cout<<"====== Jobs Done======\n";
+    cout<<"====== Jobs Done ======\n";
     cout<<"Nama Montir: ";
     getline(cin,montir);
 
@@ -251,15 +324,11 @@ void selesaiServis(){
 
         if(scanner->montir==montir){
 
-            cout<<"====== Service ======\n";
             cout<<"Model Mobil: "<<scanner->modelMobil<<endl;
-            cout<<"Merek Mobil: "<<scanner->merekMobil<<endl;
-            cout<<"Kendala: "<<scanner->kendala<<endl;
-            cout<<"Montir: "<<scanner->montir<<endl;
 
             string jawab;
 
-            cout<<"Apakah servis ini sudah selesai?(yes/no): ";
+            cout<<"Apakah servis selesai? (yes/no): ";
             getline(cin,jawab);
 
             if(jawab=="yes"){
@@ -283,8 +352,10 @@ void selesaiServis(){
         prev=scanner;
         scanner=scanner->next;
     }
-}
 
+    cout<<"Press enter...";
+    cin.get();
+}
 
 void riwayatCustomer(){
 
@@ -294,13 +365,18 @@ void riwayatCustomer(){
     cout<<"Masukkan Nama: ";
     getline(cin,nama);
 
-    Service* scanner=doneHead;
-
     cout<<"====== Services =======\n";
 
+    bool ditemukan=false;
+
+    Service* scanner=frontQueue;
+
+    // cek servis yang masih pending
     while(scanner!=NULL){
 
         if(scanner->dataCustomer.nama==nama){
+
+            ditemukan=true;
 
             cout<<"Model Mobil: "<<scanner->modelMobil<<endl;
             cout<<"Merek Mobil: "<<scanner->merekMobil<<endl;
@@ -315,17 +391,42 @@ void riwayatCustomer(){
         scanner=scanner->next;
     }
 
+    // cek servis yang sudah selesai
+    scanner=doneHead;
+
+    while(scanner!=NULL){
+
+        if(scanner->dataCustomer.nama==nama){
+
+            ditemukan=true;
+
+            cout<<"Model Mobil: "<<scanner->modelMobil<<endl;
+            cout<<"Merek Mobil: "<<scanner->merekMobil<<endl;
+            cout<<"Kendala: "<<scanner->kendala<<endl;
+            cout<<"Montir: "<<scanner->montir<<endl;
+            cout<<"Tanggal Masuk: "<<scanner->tanggalMasuk<<endl;
+            cout<<"Nama Pelanggan: "<<scanner->dataCustomer.nama<<endl;
+            cout<<"No Telp Pelanggan: "<<scanner->dataCustomer.telp<<endl;
+            cout<<"=========================\n";
+        }
+
+        scanner=scanner->next;
+    }
+
+    if(!ditemukan){
+        cout<<"Tidak ada riwayat servis.\n";
+    }
+
     cout<<"Press any key to go back ...";
     cin.get();
 }
 
-
 void menuServis(){
 
     cout<<"====== Services ======\n";
-    cout<<"1. Semua Servis Singkat\n";
+    cout<<"1. Semua Servis\n";
     cout<<"2. Servis Baru\n";
-    cout<<"3. Selesaikan Pekerjaan\n";
+    cout<<"3. Selesaikan Servis\n";
     cout<<"Pilihan: ";
 
     int pilih;
@@ -337,7 +438,6 @@ void menuServis(){
     else if(pilih==3) selesaiServis();
 }
 
-
 int main(){
 
     loadPending();
@@ -346,7 +446,6 @@ int main(){
     while(true){
 
         cout<<"====== Welcome to Lognuts ======\n";
-        cout<<"Pilih menu!\n";
         cout<<"1. Antrian Servis\n";
         cout<<"2. Riwayat Servis Anda\n";
         cout<<"3. Keluar\n";
@@ -358,9 +457,10 @@ int main(){
         if(input=="1") tampilAntrian();
         else if(input=="2") riwayatCustomer();
         else if(input=="3") break;
+
         else if(input=="adminacces8008"){
 
-            cout<<"====== Welcome to Lognuts ======\n";
+            cout<<"====== Admin Menu ======\n";
             cout<<"1. Servis\n";
             cout<<"2. Pelanggan Baru\n";
             cout<<"3. Keluar\n";
@@ -371,7 +471,7 @@ int main(){
             cin.ignore();
 
             if(pilih==1) menuServis();
-            else if(pilih==2) servisBaru();
+            else if(pilih==2) pelangganBaru();
         }
 
         cout<<endl;
