@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -25,7 +26,7 @@ Service* doneHead=NULL;
 
 string montirList[4]={"Suby","Farhan","Dimas","Aldo"};
 
-bool customerExists(string nama){
+bool cekCust(string nama){
 
     ifstream file("cust.txt");
     if(!file.is_open()) return false;
@@ -45,7 +46,7 @@ bool customerExists(string nama){
     return false;
 }
 
-string getCustomerPhone(string nama){
+string getTelp(string nama){
 
     ifstream file("cust.txt");
     if(!file.is_open()) return "";
@@ -65,14 +66,14 @@ string getCustomerPhone(string nama){
     return "";
 }
 
-void saveCustomer(Customer data){
+void saveCust(Customer data){
 
     ofstream file("cust.txt",ios::app);
     file<<data.nama<<"|"<<data.telp<<endl;
     file.close();
 }
 
-void enqueueService(Service* baru){
+void addQueue(Service* baru){
 
     if(frontQueue==NULL){
         frontQueue=rearQueue=baru;
@@ -163,7 +164,7 @@ void loadPending(){
         getline(file,baru->dataCustomer.telp);
 
         baru->next=NULL;
-        enqueueService(baru);
+        addQueue(baru);
     }
 
     file.close();
@@ -316,9 +317,9 @@ void servisBaru(){
     cout<<"Nama Pelanggan: ";
     getline(cin,baru->dataCustomer.nama);
 
-    if(customerExists(baru->dataCustomer.nama)){
+    if(cekCust(baru->dataCustomer.nama)){
 
-        baru->dataCustomer.telp=getCustomerPhone(baru->dataCustomer.nama);
+        baru->dataCustomer.telp=getTelp(baru->dataCustomer.nama);
         cout<<"No Telp: "<<baru->dataCustomer.telp<<endl;
     }
     else{
@@ -330,13 +331,13 @@ void servisBaru(){
         data.nama=baru->dataCustomer.nama;
         data.telp=baru->dataCustomer.telp;
 
-        saveCustomer(data);
+        saveCust(data);
     }
 
     cout<<"Tanggal Masuk: ";
     getline(cin,baru->tanggalMasuk);
 
-    enqueueService(baru);
+    addQueue(baru);
     savePending(baru);
 
     cout<<"Servis berhasil dicatat!\n";
@@ -516,7 +517,7 @@ void pelangganBaru(){
     cout<<"Nama Pelanggan: ";
     getline(cin,data.nama);
 
-    if(customerExists(data.nama)){
+    if(cekCust(data.nama)){
         cout<<"Pelanggan sudah ada!\n";
         cin.get();
         return;
@@ -525,7 +526,7 @@ void pelangganBaru(){
     cout<<"No Telp: ";
     getline(cin,data.telp);
 
-    saveCustomer(data);
+    saveCust(data);
 
     cout<<"Pelanggan berhasil ditambahkan!\n";
     cin.get();
