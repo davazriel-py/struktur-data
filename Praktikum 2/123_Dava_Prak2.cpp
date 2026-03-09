@@ -209,7 +209,7 @@ bool montirPending(string nama){
     return false;
 }
 
-void riwayatCustomer(){
+void riwayatCust(){
 
     string nama;
 
@@ -568,7 +568,7 @@ int main(){
         getline(cin,input);
 
         if(input=="1") semuaServisSingkat();
-        else if(input=="2") riwayatCustomer();
+        else if(input=="2") riwayatCust();
         else if(input=="3") break;
 
         else if(input=="adminacces8008"){
