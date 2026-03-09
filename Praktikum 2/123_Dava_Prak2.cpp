@@ -8,6 +8,9 @@ using namespace std;
 struct Customer{
     string nama;
     string telp;
+    string alamat;
+    string umur;
+    string gender;
 };
 
 struct Service{
@@ -31,10 +34,13 @@ bool cekCust(string nama){
     ifstream file("cust.txt");
     if(!file.is_open()) return false;
 
-    string namaFile,telp;
+    string namaFile,telp,alamat,umur,gender;
 
     while(getline(file,namaFile,'|')){
-        getline(file,telp);
+        getline(file,telp,'|');
+        getline(file,alamat,'|');
+        getline(file,umur,'|');
+        getline(file,gender);
 
         if(namaFile==nama){
             file.close();
@@ -46,15 +52,18 @@ bool cekCust(string nama){
     return false;
 }
 
-string getTelp(string nama){
+string getData(string nama){
 
     ifstream file("cust.txt");
     if(!file.is_open()) return "";
 
-    string namaFile,telp;
+    string namaFile,telp,alamat,umur,gender;
 
     while(getline(file,namaFile,'|')){
-        getline(file,telp);
+        getline(file,telp,'|');
+        getline(file,alamat,'|');
+        getline(file,umur,'|');
+        getline(file,gender);
 
         if(namaFile==nama){
             file.close();
@@ -69,7 +78,11 @@ string getTelp(string nama){
 void saveCust(Customer data){
 
     ofstream file("cust.txt",ios::app);
-    file<<data.nama<<"|"<<data.telp<<endl;
+    file<<data.nama<<"|"
+        <<data.telp<<"|"
+        <<data.alamat<<"|"
+        <<data.umur<<"|"
+        <<data.gender<<endl;
     file.close();
 }
 
@@ -319,7 +332,7 @@ void servisBaru(){
 
     if(cekCust(baru->dataCustomer.nama)){
 
-        baru->dataCustomer.telp=getTelp(baru->dataCustomer.nama);
+        baru->dataCustomer.telp=getData(baru->dataCustomer.nama);
         cout<<"No Telp: "<<baru->dataCustomer.telp<<endl;
     }
     else{
@@ -327,9 +340,21 @@ void servisBaru(){
         cout<<"Masukkan No Telp: ";
         getline(cin,baru->dataCustomer.telp);
 
+        cout<<"Masukkan Alamat: ";
+        getline(cin,baru->dataCustomer.alamat);
+
+        cout<<"Masukkan Umur: ";
+        getline(cin,baru->dataCustomer.umur);
+
+        cout<<"Masukkan Gender: ";
+        getline(cin,baru->dataCustomer.gender);
+
         Customer data;
         data.nama=baru->dataCustomer.nama;
         data.telp=baru->dataCustomer.telp;
+        data.alamat=baru->dataCustomer.alamat;
+        data.umur=baru->dataCustomer.umur;
+        data.gender=baru->dataCustomer.gender;
 
         saveCust(data);
     }
