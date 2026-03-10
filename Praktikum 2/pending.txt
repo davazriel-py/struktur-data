@@ -1,1 +1,2 @@
-Supra|Toyota|Ganti oli|Dimas|12 Januari 2026|Yusak|081111111111
+ay|aj|ajs|ajs|cd "c:\Coding\C++\Praktikum Struktur Data\Praktikum 2\" ; if ($?) { g++ 123_Dava_Prak2.cpp -o 123_Dava_Prak2 } ; if ($?) { .\123_Dava_Prak2 }|Yusak|081111111111
+ad|ad|ad|ad|189212|Yusak|

@@ -25,7 +25,7 @@ struct Service{
 
 Service* frontQueue=NULL;
 Service* rearQueue=NULL;
-Service* doneHead=NULL;
+Service* doneServis=NULL;
 
 string montirList[4]={"Suby","Farhan","Dimas","Aldo"};
 
@@ -34,14 +34,9 @@ bool cekCust(string nama){
     ifstream file("cust.txt");
     if(!file.is_open()) return false;
 
-    string namaFile,telp,alamat,umur,gender;
+    string namaFile;
 
     while(getline(file,namaFile,'|')){
-        getline(file,telp,'|');
-        getline(file,alamat,'|');
-        getline(file,umur,'|');
-        getline(file,gender);
-
         if(namaFile==nama){
             file.close();
             return true;
@@ -99,8 +94,8 @@ void addQueue(Service* baru){
 
 void addDone(Service* node){
 
-    node->next=doneHead;
-    doneHead=node;
+    node->next=doneServis;
+    doneServis=node;
 }
 
 void savePending(Service* data){
@@ -201,8 +196,8 @@ void loadDone(){
         getline(file,baru->dataCustomer.nama,'|');
         getline(file,baru->dataCustomer.telp);
 
-        baru->next=doneHead;
-        doneHead=baru;
+        baru->next=doneServis;
+        doneServis=baru;
     }
 
     file.close();
@@ -255,7 +250,7 @@ void riwayatCust(){
         scanner=scanner->next;
     }
 
-    scanner=doneHead;
+    scanner=doneServis;
 
     while(scanner!=NULL){
 
@@ -332,8 +327,6 @@ void servisBaru(){
 
     if(cekCust(baru->dataCustomer.nama)){
 
-        baru->dataCustomer.telp=getData(baru->dataCustomer.nama);
-        cout<<"No Telp: "<<baru->dataCustomer.telp<<endl;
     }
     else{
 
@@ -477,7 +470,7 @@ void tampilRiwayatMontir(string nama){
         scanner=scanner->next;
     }
 
-    scanner=doneHead;
+    scanner=doneServis;
 
     while(scanner!=NULL){
 
@@ -550,6 +543,15 @@ void pelangganBaru(){
 
     cout<<"No Telp: ";
     getline(cin,data.telp);
+
+    cout<<"Alamat: ";
+    getline(cin,data.alamat);
+
+    cout<<"Umur: ";
+    getline(cin,data.umur);
+
+    cout<<"Gender: ";
+    getline(cin,data.gender);
 
     saveCust(data);
 
