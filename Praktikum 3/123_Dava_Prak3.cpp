@@ -1,8 +1,6 @@
 ﻿#include <fstream>
 #include <iostream>
-#include <limits>
 #include <string>
-#include <vector>
 
 using namespace std;
 
@@ -38,7 +36,6 @@ struct CancelNode {
 
 struct MechanicNode {
     string nama;
-    MechanicNode* prev;
     MechanicNode* next;
 };
 
@@ -47,7 +44,7 @@ Service* rearQueue = NULL;
 Service* doneHead = NULL;
 CustomerNode* customerHead = NULL;
 CancelNode* cancelTop = NULL;
-MechanicNode* montirRoot = NULL;
+MechanicNode* montirHead = NULL;
 
 
 void pressEnter();
@@ -56,12 +53,12 @@ void addCustNode(const Customer& data, bool saveFile);
 CustomerNode* findCustName(const string& nama);
 bool checkCust(const string& nama, const string& telp);
 void loadCustomerFile();
-MechanicNode* createMechanicNode(const string& nama);
-void insertMontirTree(MechanicNode*& root, const string& nama, bool& inserted);
-void inorderMontir(MechanicNode* root, vector<string>& hasil);
+void addMontir(const string& nama);
 void rewriteMontirFile();
 void loadMontirFile();
-vector<string> getMontirList();
+int countMontir(MechanicNode* root);
+void printMontirInorder(MechanicNode* root, int& index);
+bool getMontirByIndex(MechanicNode* root, int& index, int target, string& result);
 void enqueueService(Service* baru);
 void pushDoneService(Service* node);
 void addDoneTailLoad(Service* node);
@@ -157,90 +154,99 @@ void loadCustomerFile() {
         return;
     }
 
-    string line;
-    while (getline(file, line)) {
-        if (line.empty()) {
+    string nama, telp;
+    while (getline(file, nama, '|')) {
+        if (!getline(file, telp)) {
+            break;
+        }
+        if (nama.empty()) {
             continue;
         }
 
         Customer data;
-        size_t posSep = line.find('|');
-        if (posSep == string::npos) {
-            data.nama = line;
-            data.telp = "";
-        } else {
-            data.nama = line.substr(0, posSep);
-            size_t posSep2 = line.find('|', posSep + 1);
-            if (posSep2 == string::npos) {
-                data.telp = line.substr(posSep + 1);
-            } else {
-                data.telp = line.substr(posSep + 1, posSep2 - (posSep + 1));
-            }
-        }
+        data.nama = nama;
+        data.telp = telp;
         addCustNode(data, false);
     }
 }
 
 
-MechanicNode* createMechanicNode(const string& nama) {
+void addMontir(const string& nama) {
+    MechanicNode* scanner = montirHead;
+
+    while (scanner != NULL) {
+        if (scanner->nama == nama) {
+            cout << "\n*" << nama << " sudah terdaftar sebagai montir*\n";
+            return;
+        }
+        scanner = scanner->next;
+    }
+
     MechanicNode* baru = new MechanicNode;
     baru->nama = nama;
-    baru->prev = NULL;
     baru->next = NULL;
-    return baru;
-}
 
-
-void insertMontirTree(MechanicNode*& root, const string& nama, bool& inserted) {
-    if (root == NULL) {
-        root = createMechanicNode(nama);
-        inserted = true;
-        return;
-    }
-
-    if (nama == root->nama) {
-        inserted = false;
-        return;
-    }
-
-    if (nama < root->nama) {
-        insertMontirTree(root->prev, nama, inserted);
+    if (montirHead == NULL) {
+        montirHead = baru;
     } else {
-        insertMontirTree(root->next, nama, inserted);
-    }
-}
-
-
-void inorderMontir(MechanicNode* root, vector<string>& hasil) {
-    if (root == NULL) {
-        return;
+        scanner = montirHead;
+        while (scanner->next != NULL) {
+            scanner = scanner->next;
+        }
+        scanner->next = baru;
     }
 
-    inorderMontir(root->prev, hasil);
-    hasil.push_back(root->nama);
-    inorderMontir(root->next, hasil);
+    rewriteMontirFile();
+    cout << "\n*" << nama << " telah ditambahkan ke daftar montir*\n";
 }
 
 
 void rewriteMontirFile() {
-    vector<string> daftar;
-    inorderMontir(montirRoot, daftar);
-
     ofstream file(fileMontir);
-    for (const string& nama : daftar) {
-        file << nama << "\n";
+    MechanicNode* scanner = montirHead;
+
+    while (scanner != NULL) {
+        file << scanner->nama << "\n";
+        scanner = scanner->next;
     }
 }
 
 
+int countMontir(MechanicNode* root) {
+    int count = 0;
+    MechanicNode* scanner = root;
+    while (scanner != NULL) {
+        count++;
+        scanner = scanner->next;
+    }
+    return count;
+}
+
+string getMontirByNumber(int number) {
+    MechanicNode* scanner = montirHead;
+    int index = 1;
+    while (scanner != NULL) {
+        if (index == number) {
+            return scanner->nama;
+        }
+        index++;
+        scanner = scanner->next;
+    }
+    return "";
+}
+
 void loadMontirFile() {
     ifstream file(fileMontir);
     if (!file.is_open()) {
-        vector<string> defaultMontir = {"Suby", "Farhan", "Aldo", "Dimas"};
-        for (const string& nama : defaultMontir) {
-            bool inserted = false;
-            insertMontirTree(montirRoot, nama, inserted);
+        const string defaultMontirs[] = {"Suby", "Farhan", "Aldo", "Dimas"};
+
+        for (const string& nama : defaultMontirs) {
+            MechanicNode* baru = new MechanicNode;
+            baru->nama = nama;
+            baru->next = montirHead;
+            montirHead = baru;
         }
+
         rewriteMontirFile();
         return;
     }
@@ -250,16 +256,11 @@ void loadMontirFile() {
         if (nama.empty()) {
             continue;
         }
-        bool inserted = false;
-        insertMontirTree(montirRoot, nama, inserted);
+        MechanicNode* baru = new MechanicNode;
+        baru->nama = nama;
+        baru->next = montirHead;
+        montirHead = baru;
     }
-}
-
-
-vector<string> getMontirList() {
-    vector<string> daftar;
-    inorderMontir(montirRoot, daftar);
-    return daftar;
 }
 
 
@@ -334,17 +335,9 @@ void loadPendingFile() {
         getline(file, baru->montir, '|');
         getline(file, baru->tanggalMasuk, '|');
 
-        string sNama;
-        if (!getline(file, sNama)) {
+        if (!getline(file, baru->dataCustomer.nama)) {
             delete baru;
             break;
-        }
-
-        size_t pisah = sNama.find('|');
-        if (pisah != string::npos) {
-            baru->dataCustomer.nama = sNama.substr(0, pisah);
-        } else {
-            baru->dataCustomer.nama = sNama;
         }
 
         CustomerNode* c = findCustName(baru->dataCustomer.nama);
@@ -373,16 +366,9 @@ void loadDoneFile() {
         getline(file, baru->montir, '|');
         getline(file, baru->tanggalMasuk, '|');
 
-        string sNama;
-        if (!getline(file, sNama)) {
+        if (!getline(file, baru->dataCustomer.nama)) {
             delete baru;
             break;
-        }
-        size_t pisah = sNama.find('|');
-        if (pisah != string::npos) {
-            baru->dataCustomer.nama = sNama.substr(0, pisah);
-        } else {
-            baru->dataCustomer.nama = sNama;
         }
 
         CustomerNode* c = findCustName(baru->dataCustomer.nama);
@@ -419,27 +405,32 @@ int getQueueCount() {
 
 
 string pilihMontirMenu() {
-    vector<string> daftar = getMontirList();
-    if (daftar.empty()) {
+    if (montirHead == NULL) {
         cout << "Belum ada montir terdaftar.\n";
         return "";
     }
 
     cout << "Pilih Montir:\n";
-    for (int indeks = 0; indeks < static_cast<int>(daftar.size()); indeks++) {
-        cout << indeks + 1 << ". " << daftar[static_cast<size_t>(indeks)] << "\n";
+    MechanicNode* scanner = montirHead;
+    int indeks = 1;
+    while (scanner != NULL) {
+        cout << indeks << ". " << scanner->nama << "\n";
+        indeks++;
+        scanner = scanner->next;
     }
 
+    int jumlahMontir = indeks - 1;
     cout << "Pilihan: ";
     int pil = 0;
     cin >> pil;
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    cin.ignore();
 
-    if (pil < 1 || pil > static_cast<int>(daftar.size())) {
+    if (pil < 1 || pil > jumlahMontir) {
         cout << "Pilihan montir tidak valid.\n";
         return "";
     }
-    return daftar[static_cast<size_t>(pil - 1)];
+
+    return getMontirByNumber(pil);
 }
 
 
@@ -448,13 +439,14 @@ void menuAntrianAnda(const string& nama, const string& telp) {
     Service* scanner = frontQueue;
     int aNtrian = 1;
     bool aDa_pending = false;
-    vector<pair<string, int> > posisi;
+    bool aPunya = false;
 
     while (scanner != NULL) {
         aDa_pending = true;
         printServiceDetail(scanner);
         if (scanner->dataCustomer.nama == nama && scanner->dataCustomer.telp == telp) {
-            posisi.push_back(make_pair(scanner->modelMobil, aNtrian));
+            cout << "Servis " << scanner->modelMobil << " Anda berada di antrian ke-" << aNtrian << "\n";
+            aPunya = true;
         }
         aNtrian++;
         scanner = scanner->next;
@@ -462,13 +454,8 @@ void menuAntrianAnda(const string& nama, const string& telp) {
 
     if (!aDa_pending) {
         cout << "Belum ada servis pending.\n";
-    } else if (posisi.empty()) {
+    } else if (!aPunya) {
         cout << "Anda belum punya servis dalam antrian.\n";
-    } else {
-        for (size_t indeks = 0; indeks < posisi.size(); indeks++) {
-            cout << "Servis " << posisi[indeks].first << " Anda berada di antrian ke-" << posisi[indeks].second
-                 << "\n";
-        }
     }
 
     pressEnter();
@@ -551,49 +538,66 @@ void pushCancelStack(Service* data) {
 
 
 void menuCancelService(const string& nama, const string& telp) {
-    vector<Service*> daftar_service;
-    vector<Service*> dAftar_prev;
-
     Service* scanner = frontQueue;
     Service* pRev = NULL;
+    int total = 0;
 
     while (scanner != NULL) {
         if (scanner->dataCustomer.nama == nama && scanner->dataCustomer.telp == telp) {
-            daftar_service.push_back(scanner);
-            dAftar_prev.push_back(pRev);
+            total++;
         }
-        pRev = scanner;
         scanner = scanner->next;
     }
 
-    if (daftar_service.empty()) {
+    if (total == 0) {
         cout << "Tidak ada servis yang bisa dibatalkan.\n";
         pressEnter();
         return;
     }
 
     cout << "====== Cancel Service ======\n";
-    for (size_t indeks = 0; indeks < daftar_service.size(); indeks++) {
-        cout << indeks + 1 << ". Servis Ke-" << indeks + 1 << ":\n";
-        cout << "   Model Mobil: " << daftar_service[indeks]->modelMobil << "\n";
-        cout << "   Merek Mobil: " << daftar_service[indeks]->merekMobil << "\n";
-        cout << "   Kendala: " << daftar_service[indeks]->kendala << "\n";
-        cout << "   Montir: " << daftar_service[indeks]->montir << "\n\n";
+    scanner = frontQueue;
+    int index = 1;
+    while (scanner != NULL) {
+        if (scanner->dataCustomer.nama == nama && scanner->dataCustomer.telp == telp) {
+            cout << index << ". Servis Ke-" << index << ":\n";
+            cout << "   Model Mobil: " << scanner->modelMobil << "\n";
+            cout << "   Merek Mobil: " << scanner->merekMobil << "\n";
+            cout << "   Kendala: " << scanner->kendala << "\n";
+            cout << "   Montir: " << scanner->montir << "\n\n";
+            index++;
+        }
+        scanner = scanner->next;
     }
 
     cout << "Pilih Mobil yang ingin dibatalkan: ";
     int pil = 0;
     cin >> pil;
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    cin.ignore();
 
-    if (pil < 1 || pil > static_cast<int>(daftar_service.size())) {
+    if (pil < 1 || pil > total) {
         cout << "Pilihan tidak valid.\n";
         pressEnter();
         return;
     }
 
-    Service* hapus = daftar_service[static_cast<size_t>(pil - 1)];
-    Service* prevHapus = dAftar_prev[static_cast<size_t>(pil - 1)];
+    Service* hapus = NULL;
+    Service* prevHapus = NULL;
+    scanner = frontQueue;
+    pRev = NULL;
+    index = 1;
+    while (scanner != NULL) {
+        if (scanner->dataCustomer.nama == nama && scanner->dataCustomer.telp == telp) {
+            if (index == pil) {
+                hapus = scanner;
+                prevHapus = pRev;
+                break;
+            }
+            index++;
+        }
+        pRev = scanner;
+        scanner = scanner->next;
+    }
 
     if (prevHapus == NULL) {
         frontQueue = hapus->next;
@@ -777,36 +781,46 @@ void menuSelesaikanServiceAdmin() {
         return;
     }
 
-    vector<Service*> daftar;
-    vector<Service*> daftar_prev;
     Service* scanner = frontQueue;
     Service* prev = NULL;
-    int nO = 1;
+    int no = 1;
 
     cout << "====== Selesaikan Servis ======\n";
     while (scanner != NULL) {
-        cout << nO << ". " << scanner->modelMobil << " - " << scanner->dataCustomer.nama << " (" << scanner->montir
+        cout << no << ". " << scanner->modelMobil << " - " << scanner->dataCustomer.nama << " (" << scanner->montir
              << ")\n";
-        daftar.push_back(scanner);
-        daftar_prev.push_back(prev);
         prev = scanner;
         scanner = scanner->next;
-        nO++;
+        no++;
     }
 
+    int total = no - 1;
     cout << "Pilih nomor servis yang selesai: ";
     int pil = 0;
     cin >> pil;
-    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    cin.ignore();
 
-    if (pil < 1 || pil > static_cast<int>(daftar.size())) {
+    if (pil < 1 || pil > total) {
         cout << "Pilihan tidak valid.\n";
         pressEnter();
         return;
     }
 
-    Service* selesai = daftar[static_cast<size_t>(pil - 1)];
-    Service* prevSelesai = daftar_prev[static_cast<size_t>(pil - 1)];
+    Service* selesai = NULL;
+    Service* prevSelesai = NULL;
+    scanner = frontQueue;
+    prev = NULL;
+    int idx = 1;
+    while (scanner != NULL) {
+        if (idx == pil) {
+            selesai = scanner;
+            prevSelesai = prev;
+            break;
+        }
+        prev = scanner;
+        scanner = scanner->next;
+        idx++;
+    }
 
     cout << "\nDetail servis yang dipilih:\n";
     printServiceDetail(selesai);
@@ -863,17 +877,29 @@ void menuMontirBaruAdmin() {
     cout << "====== New Mechanic ======\n";
     cout << "Masukkan Nama montir baru\n";
     cout << "Nama: ";
+
     string nama;
     getline(cin, nama);
 
-    bool inserted = false;
-    insertMontirTree(montirRoot, nama, inserted);
-    if (!inserted) {
-        cout << "\n*" << nama << " sudah terdaftar sebagai montir*\n";
-    } else {
-        rewriteMontirFile();
-        cout << "\n*" << nama << " telah ditambahkan ke daftar montir*\n";
+    MechanicNode* scanner = montirHead;
+
+    while (scanner != NULL) {
+        if (scanner->nama == nama) {
+            cout << "\n*" << nama << " sudah terdaftar sebagai montir*\n";
+            pressEnter();
+            return;
+        }
+        scanner = scanner->next;
     }
+
+    MechanicNode* baru = new MechanicNode;
+    baru->nama = nama;
+    baru->next = montirHead;
+    montirHead = baru;
+
+    rewriteMontirFile();
+
+    cout << "\n*" << nama << " telah ditambahkan ke daftar montir*\n";
     pressEnter();
 }
 
@@ -889,7 +915,7 @@ void menuServisAdmin() {
 
         int pil = 0;
         cin >> pil;
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cin.ignore();
 
         if (pil == 1) {
             menuSemuaServiceAdmin();
@@ -920,7 +946,7 @@ void menuAdmin() {
 
         int pil = 0;
         cin >> pil;
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cin.ignore();
 
         if (pil == 1) {
             menuServisAdmin();
@@ -953,7 +979,7 @@ void menuCustomer(const string& nama, const string& telp) {
 
         int pil = 0;
         cin >> pil;
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cin.ignore();
 
         if (pil == 1) {
             menuAntrianAnda(nama, telp);
@@ -1032,8 +1058,3 @@ int main() {
 
     return 0;
 }
-
-
-
-
-
