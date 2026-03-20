@@ -55,13 +55,11 @@ bool checkCust(const string& nama, const string& telp);
 void loadCustomerFile();
 void addMontir(const string& nama);
 void rewriteMontirFile();
+string getMontirByNumber(int number);
 void loadMontirFile();
-int countMontir(MechanicNode* root);
-void printMontirInorder(MechanicNode* root, int& index);
-bool getMontirByIndex(MechanicNode* root, int& index, int target, string& result);
 void enqueueService(Service* baru);
 void pushDoneService(Service* node);
-void addDoneTailLoad(Service* node);
+void appendDoneService(Service* node);
 void rewritePendingFile();
 void rewriteDoneFile();
 void loadPendingFile();
@@ -83,6 +81,7 @@ void menuPelangganBaruAdmin();
 void menuMontirBaruAdmin();
 void menuServisAdmin();
 void menuAdmin();
+void menuCustomer(const string& nama, const string& telp);
 
 
 void pressEnter() {
@@ -212,16 +211,6 @@ void rewriteMontirFile() {
 }
 
 
-int countMontir(MechanicNode* root) {
-    int count = 0;
-    MechanicNode* scanner = root;
-    while (scanner != NULL) {
-        count++;
-        scanner = scanner->next;
-    }
-    return count;
-}
-
 string getMontirByNumber(int number) {
     MechanicNode* scanner = montirHead;
     int index = 1;
@@ -282,7 +271,7 @@ void pushDoneService(Service* node) {
 }
 
 
-void addDoneTailLoad(Service* node) {
+void appendDoneService(Service* node) {
     node->next = NULL;
     if (doneHead == NULL) {
         doneHead = node;
@@ -375,7 +364,7 @@ void loadDoneFile() {
         baru->dataCustomer.telp = (c != NULL ? c->data.telp : "");
 
         baru->next = NULL;
-        addDoneTailLoad(baru);
+        appendDoneService(baru);
     }
 }
 
@@ -406,7 +395,6 @@ int getQueueCount() {
 
 string pilihMontirMenu() {
     if (montirHead == NULL) {
-        cout << "Belum ada montir terdaftar.\n";
         return "";
     }
 
@@ -505,8 +493,8 @@ void menuBookingCustomer(const string& nama, const string& telp) {
     cout << "Tanggal Masuk Bengkel: ";
     getline(cin, tanggal);
 
-    string mOntir = pilihMontirMenu();
-    if (mOntir.empty()) {
+    string montir = pilihMontirMenu();
+    if (montir.empty()) {
         pressEnter();
         return;
     }
@@ -515,7 +503,7 @@ void menuBookingCustomer(const string& nama, const string& telp) {
     baru->modelMobil = model;
     baru->merekMobil = merek;
     baru->kendala = kendala;
-    baru->montir = mOntir;
+    baru->montir = montir;
     baru->tanggalMasuk = tanggal;
     baru->dataCustomer.nama = nama;
     baru->dataCustomer.telp = telp;
@@ -539,7 +527,7 @@ void pushCancelStack(Service* data) {
 
 void menuCancelService(const string& nama, const string& telp) {
     Service* scanner = frontQueue;
-    Service* pRev = NULL;
+    Service* prev = NULL;
     int total = 0;
 
     while (scanner != NULL) {
@@ -584,18 +572,18 @@ void menuCancelService(const string& nama, const string& telp) {
     Service* hapus = NULL;
     Service* prevHapus = NULL;
     scanner = frontQueue;
-    pRev = NULL;
+    prev = NULL;
     index = 1;
     while (scanner != NULL) {
         if (scanner->dataCustomer.nama == nama && scanner->dataCustomer.telp == telp) {
             if (index == pil) {
                 hapus = scanner;
-                prevHapus = pRev;
+                prevHapus = prev;
                 break;
             }
             index++;
         }
-        pRev = scanner;
+        prev = scanner;
         scanner = scanner->next;
     }
 
