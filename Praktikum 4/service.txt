@@ -1,1 +1,10 @@
-Yaris|Toyota|Dana|01-02-26|1|Rafi|Ganti Velg
+Yaris|Toyota|Rara|20-04-26|1|Suby|Ganti oli
+Xpander|Mitsubishi|Bayu|21-04-26|4|Dimas|Tangki bocor
+Supra|Toyota|Mita|19-04-26|2|Suby|Ganti ban
+Brio|Honda|Yanto|22-04-26|3|Farhan|Velg pecah
+Civic|Honda|Yanti|23-04-26|2|Dimas|Ganti spion
+Ertiga|Suzuki|Remi|24-04-26|2|Aldo|Spedometer error
+Sigra|Daihatsu|Masri|26-04-26|2|Dimas|Ganti busi
+Calya|Toyota|Karin|25-04-26|4|Farhan|Mesin meledak
+Avanza|Honda|Rani|28-04-26|1|Suby|Ban bocor
+Sigra|Daihatsu|Raja|27-04-26|1|Suby|Ban bocor

@@ -81,6 +81,7 @@ bool isDateExist(string date) {
 }
 
 int daysInMonth(int m, int y) {
+    if (m == 2 && y % 4 == 0) return 29;
     if (m == 2) return 28;
     if (m == 4 || m == 6 || m == 9 || m == 11) return 30;
     return 31;
@@ -105,7 +106,6 @@ bool isValidDate(string date) {
     return true;
 }
 
-
 string nextDay(string date) {
     int d, m, y;
     sscanf(date.c_str(), "%d-%d-%d", &d, &m, &y);
@@ -126,17 +126,32 @@ string nextDay(string date) {
 }
 
 string recursiveDate(string date, int count) {
-    if (count == 5) {
-        cout << "Sudah diundur 5x, masukkan tanggal baru: ";
-        cin >> date;
-        count = 0;
+    if (!isDateExist(date)) {
+        if (count > 0) {
+            cout << "Tanggal ambil yang baru adalah: " << date << endl;
+        }
+        return date;
     }
 
-    if (!isDateExist(date)) return date;
+    if (count == 0) {
+        cout << "Tanggal sudah dijadwalkan oleh servis lain\n";
+    }
 
-    cout << "Tanggal sudah dipakai, diundur " << count+1 << " hari\n";
+    if (count == 5) {
+        cout << "Tanggal sudah diundur sebanyak 5 kali, masukkan tanggal baru: ";
+        cin >> date;
 
-    date = nextDay(date);
+        if (!isValidDate(date)) {
+            cout << "Tanggal tidak valid!\n";
+            return recursiveDate(date, 0);
+        }
+
+        return recursiveDate(date, 0);
+    }
+
+    cout << "Tanggal diundur " << count+1 << " hari setelah tanggal baru!!.\n";
+
+    
 
     return recursiveDate(nextDay(date), count + 1);
 }
@@ -152,7 +167,7 @@ void addService() {
     cout << "Urgency (1-4): "; cin >> newNode->urgency;
     string inputTanggal;
     while (true) {
-        cout << "Tanggal (dd-mm-yy): ";
+        cout << "Tanggal ambil (dd-mm-yy): ";
         cin >> inputTanggal;
         
         if (isValidDate(inputTanggal)) break;
@@ -160,6 +175,7 @@ void addService() {
         cout << "Tanggal tidak valid!\n";
     }
 
+    inputTanggal = recursiveDate(inputTanggal, 0);
     newNode->tanggal = inputTanggal;
 
     newNode->next = NULL;
@@ -210,27 +226,36 @@ Service* copyList() {
     return newHead;
 }
 
-void paTience_sorTing(Service*& list, bool byUrgency) {
-    if (!list) return;
-
+void urgencySort(Service*& list, bool byUrgency) {
     for (Service* i = list; i; i = i->next) {
+
+        Service* best = i;
+
         for (Service* j = i->next; j; j = j->next) {
 
-            bool swapCond = false;
+            bool cond = false;
 
             if (byUrgency) {
-                if (j->urgency > i->urgency) swapCond = true;
-                else if (j->urgency == i->urgency &&
-                         dateToInt(j->tanggal) < dateToInt(i->tanggal))
-                    swapCond = true;
+                if (j->urgency > best->urgency) cond = true;
+                else if (j->urgency == best->urgency &&
+                         dateToInt(j->tanggal) < dateToInt(best->tanggal))
+                    cond = true;
             } else {
-                if (dateToInt(j->tanggal) < dateToInt(i->tanggal))
-                    swapCond = true;
+                if (dateToInt(j->tanggal) < dateToInt(best->tanggal))
+                    cond = true;
             }
 
-            if (swapCond) {
-                swap(*i, *j);
-            }
+            if (cond) best = j;
+        }
+
+        if (best != i) {
+            swap(i->model, best->model);
+            swap(i->merek, best->merek);
+            swap(i->pelanggan, best->pelanggan);
+            swap(i->tanggal, best->tanggal);
+            swap(i->urgency, best->urgency);
+            swap(i->montir, best->montir);
+            swap(i->kendala, best->kendala);
         }
     }
 }
@@ -247,8 +272,8 @@ void viewQueue() {
             display(head);
         } else {
             temp = copyList();
-            if (pilih == 'D') paTience_sorTing(temp, false);
-            else if (pilih == 'U') paTience_sorTing(temp, true);
+            if (pilih == 'D') urgencySort(temp, false);
+            else if (pilih == 'U') urgencySort(temp, true);
             display(temp);
         }
 
@@ -333,7 +358,6 @@ void rescheduleService() {
     Service* temp = head;
     int i = 1;
 
-    // tampilkan list
     while (temp) {
         cout << i << ". Servis:\n";
         cout << "Model Mobil: " << temp->model << endl;
@@ -368,22 +392,23 @@ void rescheduleService() {
     cout << "Tanggal Ambil: " << temp->tanggal << endl;
 
     string tanggalBaru;
-    
-    while (true) {
-        cout << "Masukkan Tanggal baru (dd-mm-yy): ";
-        cin >> tanggalBaru;
+        while (true) {
+            cout << "Masukkan Tanggal baru (dd-mm-yy): ";
+            cin >> tanggalBaru;
 
-        if (isValidDate(tanggalBaru)) break;
+        if (!isValidDate(tanggalBaru)) {
             cout << "Tanggal tidak valid!\n";
-    }
+            continue;
+        }
 
-    string hasil = recursiveDate(tanggalBaru, 0);
-    cout << "Tanggal ambil yang baru adalah " << tanggalBaru << endl;
-    temp->tanggal = tanggalBaru;
-    cout << "Servis " << temp->model << " berhasil di undur!!\n";
-
-    saveToFile();
+        tanggalBaru = recursiveDate(tanggalBaru, 0);
+        temp->tanggal = tanggalBaru;
+        saveToFile();
+        cout << "\nServis " << temp->model << " berhasil di undur!!\n";
+        break;
+        }
 }
+
 
 int main() {
     loadFromFile();
