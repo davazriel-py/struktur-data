@@ -1,6 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <cstring>
 #include <iomanip>
 #include <vector>
 #include <algorithm>
@@ -50,8 +49,10 @@ Movie* root = NULL;
 void saveToFile();
 void loadFromFile();
 void rateMovie(Movie* movie);
+void displayMovie(Movie* movie);
+void splitRelated(Movie* movie, string data);
 
-const int SIZE = 10;
+const int SIZE = 5;
 Genre* hashTable[SIZE];
 
 string genreList[] = {
@@ -185,6 +186,24 @@ Movie* searchMovie(Movie* root, string nama) {
     return searchMovie(root->right, nama);
 }
 
+bool movieMatchesQuery(Movie* movie, const string& query) {
+    string lowerQuery = toLowerCase(query);
+    string lowerName = toLowerCase(movie->nama);
+    return lowerName.find(lowerQuery) != string::npos;
+}
+
+void collectMovieMatches(Movie* root, const string& query, vector<Movie*>& results) {
+    if (!root) return;
+
+    collectMovieMatches(root->left, query, results);
+
+    if (movieMatchesQuery(root, query)) {
+        results.push_back(root);
+    }
+
+    collectMovieMatches(root->right, query, results);
+}
+
 Movie* searchMoviePartial(Movie* root, const string& nama) {
     if (!root) return NULL;
 
@@ -288,6 +307,60 @@ void connectGenre(Movie* movie, string genreName) {
     addGenreToMovie(movie, genreName);
 }
 
+bool isGenreValid(const string& genreName) {
+    return findGenre(genreName) != NULL;
+}
+
+void viewGenreMovies(Genre* genre) {
+    vector<Movie*> movies;
+    GenreMovie* temp = genre->movieHead;
+
+    while (temp) {
+        movies.push_back(temp->movie);
+        temp = temp->next;
+    }
+
+    if (movies.empty()) {
+        cout << "Tidak ada film dalam genre ini\n";
+        return;
+    }
+
+    int currentIdx = 0;
+
+    do {
+        cout << "\n==== Genre " << genre->nama << " ====\n";
+        displayMovie(movies[currentIdx]);
+
+        cout << "[N]ext, [P]revious, [C]lose, [R]ate\n";
+        char pilih;
+        cin >> pilih;
+
+        if (pilih == 'N' || pilih == 'n') {
+            if (currentIdx < (int)movies.size() - 1) {
+                currentIdx++;
+            }
+            else {
+                cout << "Sudah di film terakhir\n";
+            }
+        }
+        else if (pilih == 'P' || pilih == 'p') {
+            if (currentIdx > 0) {
+                currentIdx--;
+            }
+            else {
+                cout << "Sudah di film pertama\n";
+            }
+        }
+        else if (pilih == 'R' || pilih == 'r') {
+            rateMovie(movies[currentIdx]);
+            saveToFile();
+        }
+        else if (pilih == 'C' || pilih == 'c') {
+            break;
+        }
+    } while (true);
+}
+
 void connectRelatedMovie(Movie* movie, string relatedName) {
     relatedName = trimString(relatedName);
 
@@ -382,30 +455,6 @@ void rateMovie(Movie* movie) {
     cout << "Rating terbaru: " << movie->rating << endl;
 }
 
-void inorderFilm(Movie* root) {
-    if (!root) return;
-
-    inorderFilm(root->left);
-
-    if (root->episode == 0) {
-        cout << root->nama << " | " << root->rating << endl;
-    }
-
-    inorderFilm(root->right);
-}
-
-void inorderSeries(Movie* root) {
-    if (!root) return;
-
-    inorderSeries(root->left);
-
-    if (root->episode > 0) {
-        cout << root->nama << " | " << root->rating << endl;
-    }
-
-    inorderSeries(root->right);
-}
-
 void searchMenu() {
     string nama;
 
@@ -414,22 +463,54 @@ void searchMenu() {
     cout << "Nama: ";
     getline(cin, nama);
 
-    Movie* movie = searchMovie(root, nama);
+    vector<Movie*> matches;
+    collectMovieMatches(root, nama, matches);
 
-    if (!movie) {
+    if (matches.empty()) {
         cout << "Film tidak ditemukan\n";
         return;
     }
 
-    displayMovie(movie);
+    if (matches.size() == 1) {
+        Movie* movie = matches[0];
+        displayMovie(movie);
 
-    char pilih;
+        char pilih;
+        cout << "[C]lose [R]ate\n";
+        cin >> pilih;
 
-    cout << "[C]lose [R]ate\n";
+        if (pilih == 'R' || pilih == 'r') {
+            rateMovie(movie);
+            saveToFile();
+        }
+
+        return;
+    }
+
+    cout << "Hasil pencarian:\n";
+    for (int i = 0; i < (int)matches.size(); i++) {
+        cout << i + 1 << ". " << matches[i]->nama << " | " << fixed << setprecision(1) << matches[i]->rating << "\n";
+    }
+
+    cout << "Pilih film (0 untuk batal): ";
+    int pilih;
     cin >> pilih;
 
-    if (pilih == 'R') {
+    if (pilih < 1 || pilih > (int)matches.size()) {
+        cout << "Dibatalkan\n";
+        return;
+    }
+
+    Movie* movie = matches[pilih - 1];
+    displayMovie(movie);
+
+    char action;
+    cout << "[C]lose [R]ate\n";
+    cin >> action;
+
+    if (action == 'R' || action == 'r') {
         rateMovie(movie);
+        saveToFile();
     }
 }
 
@@ -503,29 +584,25 @@ void genreMenu() {
     }
 
     string genreName = genreList[pilih - 1];
-
     Genre* genre = findGenre(genreName);
 
     if (!genre) return;
 
-    GenreMovie* temp = genre->movieHead;
-
-    while (temp) {
-        cout << endl;
-        displayMovie(temp->movie);
-        temp = temp->next;
-    }
+    viewGenreMovies(genre);
 }
 
 void tambahFilm() {
     string nama;
     string studio;
+    string genreInput;
+    string relatedInput;
 
     int episode;
     int season;
 
     cin.ignore();
 
+    cout << "==== Tambah Film / Series ====\n";
     cout << "Nama: ";
     getline(cin, nama);
 
@@ -542,6 +619,12 @@ void tambahFilm() {
 
     cin.ignore();
 
+    cout << "Genre: ";
+    getline(cin, genreInput);
+
+    cout << "Jumlah Film terkait (dipisah dengan ,): ";
+    getline(cin, relatedInput);
+
     cout << "Studio: ";
     getline(cin, studio);
 
@@ -552,39 +635,46 @@ void tambahFilm() {
         studio
     );
 
+    vector<string> genres;
+    string tempGenre = "";
+
+    for (int i = 0; i <= genreInput.length(); i++) {
+
+        if (i == genreInput.length() || genreInput[i] == ',') {
+            
+            string g = trimString(tempGenre);
+
+            if (g != "") {
+                genres.push_back(g);
+            }
+
+            tempGenre = "";
+        }
+
+        else {
+            tempGenre += genreInput[i];
+        }
+    }
+
+    int validGenreCount = 0;
+    for (const auto& g : genres) {
+        if (isGenreValid(g)) {
+            validGenreCount++;
+        }
+    }
+
+    if (validGenreCount == 0) {
+        cout << "Tidak ada genre yang valid. Film ditolak\n";
+        return;
+    }
+
     root = insertMovie(root, newMovie);
 
-    int totalGenre;
-
-    cout << "Jumlah genre: ";
-    cin >> totalGenre;
-
-    cin.ignore();
-
-    for (int i = 0; i < totalGenre; i++) {
-        string genre;
-
-        cout << "Genre " << i + 1 << ": ";
-        getline(cin, genre);
-
-        connectGenre(newMovie, genre);
+    for (const auto& g : genres) {
+        connectGenre(newMovie, g);
     }
 
-    int totalRelated;
-
-    cout << "Jumlah film terkait: ";
-    cin >> totalRelated;
-
-    cin.ignore();
-
-    for (int i = 0; i < totalRelated; i++) {
-        string related;
-
-        cout << "Film terkait " << i + 1 << ": ";
-        getline(cin, related);
-
-        connectRelatedMovie(newMovie, related);
-    }
+    splitRelated(newMovie, relatedInput);
 
     cout << "Film berhasil ditambahkan\n";
 
@@ -645,38 +735,44 @@ void saveToFile() {
 void splitGenre(Movie* movie, string data) {
     string temp = "";
 
-    for (int i = 0; i <= data.length(); i++) {
-        if (data[i] == ',' || i == data.length()) {
+    for (int i = 0; i < (int)data.length(); i++) {
+        if (data[i] == ',') {
             string genre = trimString(temp);
             if (genre != "") {
                 connectGenre(movie, genre);
             }
-
             temp = "";
         }
-
         else {
             temp += data[i];
         }
+    }
+
+    string genre = trimString(temp);
+    if (genre != "") {
+        connectGenre(movie, genre);
     }
 }
 
 void splitRelated(Movie* movie, string data) {
     string temp = "";
 
-    for (int i = 0; i <= data.length(); i++) {
-        if (data[i] == ',' || i == data.length()) {
+    for (int i = 0; i < (int)data.length(); i++) {
+        if (data[i] == ',') {
             string related = trimString(temp);
             if (related != "") {
                 connectRelatedMovie(movie, related);
             }
-
             temp = "";
         }
-
         else {
             temp += data[i];
         }
+    }
+
+    string related = trimString(temp);
+    if (related != "") {
+        connectRelatedMovie(movie, related);
     }
 }
 
@@ -738,49 +834,11 @@ void loadFromFile() {
     }
 }
 
-void dummyData() {
-    Movie* a = createMovie(
-        "Interstellar",
-        0,
-        0,
-        "Warner Bros"
-    );
-
-    Movie* b = createMovie(
-        "Deadpool",
-        0,
-        0,
-        "Marvel"
-    );
-
-    Movie* c = createMovie(
-        "Breaking Bad",
-        62,
-        5,
-        "AMC"
-    );
-
-    root = insertMovie(root, a);
-    root = insertMovie(root, b);
-    root = insertMovie(root, c);
-
-    connectGenre(a, "Drama");
-    connectGenre(a, "Action");
-
-    connectGenre(b, "Action");
-    connectGenre(b, "Drama");
-
-    connectGenre(c, "Drama");
-
-    connectRelatedMovie(b, "Interstellar");
-}
-
 int main() {
     initGenre();
     loadFromFile();
 
     if (!root) {
-        dummyData();
         saveToFile();
     }
 

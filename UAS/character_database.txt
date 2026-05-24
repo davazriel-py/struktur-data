@@ -1,0 +1,25 @@
+Raiden Shogun|5 Star|Electro
+Hu Tao|5 Star|Pyro
+Ganyu|5 Star|Cryo
+Zhongli|5 Star|Geo
+Venti|5 Star|Anemo
+Kazuha|5 Star|Anemo
+Ayaka|5 Star|Cryo
+Nahida|5 Star|Dendro
+Furina|5 Star|Hydro
+Neuvillette|5 Star|Hydro
+Xingqiu|4 Star|Hydro
+Yae Miko|5 Star|Electro
+Bennett|4 Star|Pyro
+Fischl|4 Star|Electro
+Xiangling|4 Star|Pyro
+Sucrose|4 Star|Anemo
+Beidou|4 Star|Electro
+Noelle|4 Star|Geo
+Razor|4 Star|Electro
+Chongyun|4 Star|Cryo
+Diona|4 Star|Cryo
+Yanfei|4 Star|Pyro
+Rosaria|4 Star|Cryo
+Thoma|4 Star|Pyro
+Sayu|4 Star|Anemo

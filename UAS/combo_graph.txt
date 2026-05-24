@@ -1,0 +1,5 @@
+Bennett|Kazuha
+Nahida|Raiden Shogun
+Furina|Neuvillette
+Hu Tao|Xingqiu
+Raiden Shogun|Yae Miko
