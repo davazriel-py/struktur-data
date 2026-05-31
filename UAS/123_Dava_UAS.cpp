@@ -6,41 +6,32 @@
 
 using namespace std;
 
-// ============================================================
-//                      KONSTANTA
-// ============================================================
-const int HASH_SIZE = 101;         // ukuran hash table (bilangan prima)
+const int HASH_SIZE = 101; 
 const char* DB_FILE    = "character_database.txt";
 const char* INV_FILE   = "inventory.txt";
 const char* GRAPH_FILE = "combo_graph.txt";
-const char* ADMIN_PASS = "hoyokikir123";
+const char* ADMIN_PASS = "admin123";
 
-// ============================================================
-//                        STRUCT
-// ============================================================
-
-// Node dasar untuk character
 struct Character {
     char name[64];
-    char rarity[16];  // "5 Star" atau "4 Star"
+    char rarity[16];
     char element[32];
+    int attack;
+    int hp;
 };
 
-// Node untuk Linked List (inventory & summon history)
 struct ListNode {
     Character data;
     ListNode* next;
     ListNode(Character c) : data(c), next(nullptr) {}
 };
 
-// Node untuk Stack (undo summon)
 struct StackNode {
     Character data;
     StackNode* next;
     StackNode(Character c) : data(c), next(nullptr) {}
 };
 
-// Node untuk Queue (event banner queue)
 struct QueueNode {
     Character data;
     QueueNode* next;
@@ -74,14 +65,12 @@ struct Queue {
     }
 };
 
-// Node untuk Hash Table (chaining)
 struct HashNode {
     Character data;
     HashNode* next;
     HashNode(Character c) : data(c), next(nullptr) {}
 };
 
-// Node untuk BST
 struct BSTNode {
     Character data;
     BSTNode* left;
@@ -89,7 +78,6 @@ struct BSTNode {
     BSTNode(Character c) : data(c), left(nullptr), right(nullptr) {}
 };
 
-// Node untuk Graph Adjacency List
 struct GraphEdge {
     char target[64];
     GraphEdge* next;
@@ -109,15 +97,12 @@ struct GraphNode {
     }
 };
 
-// ============================================================
-//                    LINKED LIST
-// ============================================================
+//linkedlist
 struct LinkedList {
     ListNode* head;
     int size;
     LinkedList() : head(nullptr), size(0) {}
 
-    // Tambah node di akhir
     void append(Character c) {
         ListNode* node = new ListNode(c);
         if (!head) { head = node; }
@@ -129,7 +114,6 @@ struct LinkedList {
         size++;
     }
 
-    // Hapus node terakhir (untuk undo)
     bool removeLast() {
         if (!head) return false;
         if (!head->next) {
@@ -146,7 +130,6 @@ struct LinkedList {
         return true;
     }
 
-    // Tampilkan seluruh list
     void display() {
         if (!head) { cout << "  (kosong)\n"; return; }
         ListNode* cur = head;
@@ -154,12 +137,13 @@ struct LinkedList {
         while (cur) {
             cout << "  " << i++ << ". " << cur->data.name
                  << " | " << cur->data.rarity
-                 << " | " << cur->data.element << "\n";
+                 << " | " << cur->data.element
+                 << " | ATK " << cur->data.attack
+                 << " | HP " << cur->data.hp << "\n";
             cur = cur->next;
         }
     }
 
-    // Salin ke array untuk sorting (manual)
     void toArray(Character* arr, int& n) {
         n = 0;
         ListNode* cur = head;
@@ -170,9 +154,7 @@ struct LinkedList {
     }
 };
 
-// ============================================================
-//                        STACK
-// ============================================================
+//stack
 struct Stack {
     StackNode* top;
     int size;
@@ -198,16 +180,13 @@ struct Stack {
     bool isEmpty() { return top == nullptr; }
 };
 
-// ============================================================
-//                     HASH TABLE
-// ============================================================
+//hashtable
 struct HashTable {
     HashNode* table[HASH_SIZE];
     HashTable() {
         for (int i = 0; i < HASH_SIZE; i++) table[i] = nullptr;
     }
 
-    // Fungsi hash: jumlah nilai ASCII nama
     int hash(const char* key) {
         int sum = 0;
         for (int i = 0; key[i] != '\0'; i++)
@@ -222,7 +201,6 @@ struct HashTable {
         table[idx] = node;
     }
 
-    // Cari character by nama, return pointer ke data atau nullptr
     Character* search(const char* name) {
         int idx = hash(name);
         HashNode* cur = table[idx];
@@ -234,7 +212,26 @@ struct HashTable {
         return nullptr;
     }
 
-    // Hapus entry by nama (untuk undo)
+    Character* searchIgnoreCase(const char* name) {
+        for (int i = 0; i < HASH_SIZE; i++) {
+            HashNode* cur = table[i];
+            while (cur) {
+                int j = 0;
+                bool same = true;
+                while (cur->data.name[j] != '\0' && name[j] != '\0') {
+                    char a = cur->data.name[j]; if (a >= 'A' && a <= 'Z') a += 'a' - 'A';
+                    char b = name[j]; if (b >= 'A' && b <= 'Z') b += 'a' - 'A';
+                    if (a != b) { same = false; break; }
+                    j++;
+                }
+                if (same && cur->data.name[j] == '\0' && name[j] == '\0')
+                    return &cur->data;
+                cur = cur->next;
+            }
+        }
+        return nullptr;
+    }
+
     void remove(const char* name) {
         int idx = hash(name);
         HashNode* cur = table[idx];
@@ -252,21 +249,17 @@ struct HashTable {
     }
 };
 
-// ============================================================
-//                         BST
-// ============================================================
+//bst
 struct BST {
     BSTNode* root;
     BST() : root(nullptr) {}
 
-    // Insert rekursif
     BSTNode* insertRec(BSTNode* node, Character c) {
         if (!node) return new BSTNode(c);
         if (strcmp(c.name, node->data.name) < 0)
             node->left = insertRec(node->left, c);
         else if (strcmp(c.name, node->data.name) > 0)
             node->right = insertRec(node->right, c);
-        // Duplikat diabaikan
         return node;
     }
 
@@ -274,25 +267,25 @@ struct BST {
         root = insertRec(root, c);
     }
 
-    // Inorder traversal rekursif (ascending)
     void inorder(BSTNode* node) {
         if (!node) return;
         inorder(node->left);
         cout << "  " << node->data.name
              << " | " << node->data.rarity
-             << " | " << node->data.element << "\n";
+             << " | " << node->data.element
+             << " | ATK " << node->data.attack
+             << " | HP " << node->data.hp << "\n";
         inorder(node->right);
     }
 };
 
-// ============================================================
-//                        GRAPH
-// ============================================================
+bool equalsIgnoreCase(const char* a, const char* b);
+
+//graph
 struct Graph {
-    GraphNode* head; // linked list of graph nodes
+    GraphNode* head;
     Graph() : head(nullptr) {}
 
-    // Cari graph node by name, buat jika belum ada
     GraphNode* findOrCreate(const char* name) {
         GraphNode* cur = head;
         while (cur) {
@@ -305,25 +298,40 @@ struct Graph {
         return node;
     }
 
-    // Tambah edge bidirectional
     void addEdge(const char* a, const char* b) {
         GraphNode* na = findOrCreate(a);
         GraphNode* nb = findOrCreate(b);
 
-        // Cek duplikat edge a->b
+        bool exists = false;
         GraphEdge* e = na->edges;
-        while (e) { if (strcmp(e->target, b) == 0) goto skip1; e = e->next; }
-        { GraphEdge* ea = new GraphEdge(b); ea->next = na->edges; na->edges = ea; }
-        skip1:
-
-        // Cek duplikat edge b->a
+        while (e) {
+            if (strcmp(e->target, b) == 0) {
+                exists = true;
+                break;
+            }
+            e = e->next;
+        }
+        if (!exists) {
+            GraphEdge* ea = new GraphEdge(b);
+            ea->next = na->edges;
+            na->edges = ea;
+        }
+        exists = false;
         e = nb->edges;
-        while (e) { if (strcmp(e->target, a) == 0) goto skip2; e = e->next; }
-        { GraphEdge* eb = new GraphEdge(a); eb->next = nb->edges; nb->edges = eb; }
-        skip2:;
+        while (e) {
+            if (strcmp(e->target, a) == 0) {
+                exists = true;
+                break;
+            }
+            e = e->next;
+        }
+        if (!exists) {
+            GraphEdge* eb = new GraphEdge(a);
+            eb->next = nb->edges;
+            nb->edges = eb;
+        }
     }
 
-    // Tampilkan semua relasi
     void display() {
         if (!head) { cout << "  (tidak ada relasi combo)\n"; return; }
         GraphNode* cur = head;
@@ -343,9 +351,7 @@ struct Graph {
         }
     }
 
-    // DFS rekursif dari node tertentu
     void dfsRec(const char* name, char visited[][64], int& visCount) {
-        // Tandai sudah dikunjungi
         for (int i = 0; i < visCount; i++)
             if (strcmp(visited[i], name) == 0) return;
         strncpy(visited[visCount], name, 63);
@@ -357,7 +363,7 @@ struct Graph {
         GraphNode* node = nullptr;
         GraphNode* cur = head;
         while (cur) {
-            if (strcmp(cur->name, name) == 0) { node = cur; break; }
+            if (equalsIgnoreCase(cur->name, name)) { node = cur; break; }
             cur = cur->next;
         }
         if (!node) return;
@@ -369,7 +375,6 @@ struct Graph {
         }
     }
 
-    // DFS rekursif untuk tampilan game-friendly (tanpa label teknis)
     void dfsDisplayRec(const char* name, char visited[][64], int& visCount) {
         for (int i = 0; i < visCount; i++)
             if (strcmp(visited[i], name) == 0) return;
@@ -382,7 +387,7 @@ struct Graph {
         GraphNode* node = nullptr;
         GraphNode* cur = head;
         while (cur) {
-            if (strcmp(cur->name, name) == 0) { node = cur; break; }
+            if (equalsIgnoreCase(cur->name, name)) { node = cur; break; }
             cur = cur->next;
         }
         if (!node) return;
@@ -398,7 +403,7 @@ struct Graph {
         bool found = false;
         GraphNode* cur = head;
         while (cur) {
-            if (strcmp(cur->name, startName) == 0) { found = true; break; }
+            if (equalsIgnoreCase(cur->name, startName)) { found = true; break; }
             cur = cur->next;
         }
         if (!found) return;
@@ -406,9 +411,8 @@ struct Graph {
     }
 };
 
-// ============================================================
-//               DATABASE CHARACTER (untuk admin)
-// ============================================================
+bool equalsIgnoreCase(const char* a, const char* b);
+
 struct CharDB {
     Character chars[500];
     int count;
@@ -423,14 +427,24 @@ struct CharDB {
         for (int i = 0; i < count; i++) {
             cout << "  " << i+1 << ". " << chars[i].name
                  << " | " << chars[i].rarity
-                 << " | " << chars[i].element << "\n";
+                 << " | " << chars[i].element
+                 << " | ATK " << chars[i].attack
+                 << " | HP " << chars[i].hp << "\n";
         }
+    }
+
+    bool findByNameIgnoreCase(const char* name, Character& out) {
+        for (int i = 0; i < count; i++) {
+            if (equalsIgnoreCase(chars[i].name, name)) {
+                out = chars[i];
+                return true;
+            }
+        }
+        return false;
     }
 };
 
-// ============================================================
-//                    STATISTIK
-// ============================================================
+
 struct Stats {
     int totalSummon;
     int total5Star;
@@ -438,9 +452,6 @@ struct Stats {
     Stats() : totalSummon(0), total5Star(0), total4Star(0) {}
 };
 
-// ============================================================
-//                  GLOBAL STATE
-// ============================================================
 
 LinkedList inventory;
 Stack undoStack;
@@ -449,33 +460,26 @@ BST bst;
 Graph graph;
 CharDB charDB;
 Stats stats;
-Queue summonHistory;            // Queue khusus untuk menyimpan riwayat summon
-int summonHistorySize = 0;      // Ukuran saat ini dari queue history
-const int MAX_HISTORY = 10;     // Batas maksimal history untuk FIFO
+Queue summonHistory;
+int summonHistorySize = 0;
+const int MAX_HISTORY = 10;
 
-// ============================================================
-//                   UTILITY FUNCTIONS
-// ============================================================
-
-// Cetak garis pemisah
 void printLine(char c = '-', int len = 50) {
     for (int i = 0; i < len; i++) cout << c;
     cout << "\n";
 }
 
-// Cetak judul box
 void printTitle(const char* title) {
     printLine('=');
-    int len = strlen(title);
-    int pad = (50 - len) / 2;
+    size_t len = strlen(title);
+    int pad = (50 - (int)len) / 2;
     for (int i = 0; i < pad; i++) cout << " ";
     cout << title << "\n";
     printLine('=');
 }
 
-// Tambahkan character baru ke summon history FIFO
+//queue
 void addToSummonHistory(Character c) {
-    // Jika history sudah penuh, keluarkan character tertua terlebih dahulu
     if (summonHistorySize >= MAX_HISTORY) {
         Character removed;
         summonHistory.dequeue(removed);
@@ -485,13 +489,11 @@ void addToSummonHistory(Character c) {
     summonHistorySize++;
 }
 
-// Hapus baris layar (sederhana)
 void clearScreen() {
-    // Gunakan karakter newline saja (kompatibel semua OS)
     for (int i = 0; i < 3; i++) cout << "\n";
 }
 
-// Tampilkan summon history tanpa merusak queue asli
+//queue
 void menuSummonHistory() {
     clearScreen();
     printTitle("SUMMON HISTORY");
@@ -508,7 +510,6 @@ void menuSummonHistory() {
             cout << "  " << idx++ << ". " << c.name << " | " << c.rarity << " | " << c.element << "\n";
             temp.enqueue(c);
         }
-        // Kembalikan semua data ke queue asli dalam urutan FIFO yang sama
         while (!temp.isEmpty()) {
             Character c;
             temp.dequeue(c);
@@ -521,17 +522,10 @@ void menuSummonHistory() {
     cin.get();
 }
 
-// Baca satu baris input yang aman
 void readLine(char* buf, int maxLen) {
-    cin.ignore(1000, '\n');
     cin.getline(buf, maxLen);
 }
 
-// ============================================================
-//                  FILE HANDLING
-// ============================================================
-
-// Simpan semua inventory ke file
 void saveInventory() {
     ofstream f(INV_FILE);
     if (!f) return;
@@ -539,26 +533,28 @@ void saveInventory() {
     while (cur) {
         f << cur->data.name << "|"
           << cur->data.rarity << "|"
-          << cur->data.element << "\n";
+          << cur->data.element << "|"
+          << cur->data.attack << "|"
+          << cur->data.hp << "\n";
         cur = cur->next;
     }
     f.close();
 }
 
 
-// Simpan character database ke file
 void saveCharDB() {
     ofstream f(DB_FILE);
     if (!f) return;
     for (int i = 0; i < charDB.count; i++) {
         f << charDB.chars[i].name << "|"
           << charDB.chars[i].rarity << "|"
-          << charDB.chars[i].element << "\n";
+          << charDB.chars[i].element << "|"
+          << charDB.chars[i].attack << "|"
+          << charDB.chars[i].hp << "\n";
     }
     f.close();
 }
 
-// Parse satu baris "nama|rarity|element"
 bool parseLine(const char* line, Character& c) {
     char buf[256];
     strncpy(buf, line, 255);
@@ -574,16 +570,19 @@ bool parseLine(const char* line, Character& c) {
 
     tok = strtok(nullptr, "|");
     if (!tok) return false;
-    // Hapus newline jika ada
-    int len = strlen(tok);
-    if (len > 0 && tok[len-1] == '\n') tok[len-1] = '\0';
-    if (len > 1 && tok[len-2] == '\r') tok[len-2] = '\0';
     strncpy(c.element, tok, 31); c.element[31] = '\0';
+
+    tok = strtok(nullptr, "|");
+    if (tok) c.attack = atoi(tok);
+    else c.attack = 0;
+
+    tok = strtok(nullptr, "|");
+    if (tok) c.hp = atoi(tok);
+    else c.hp = 0;
 
     return true;
 }
 
-// Load character database dari file
 void loadCharDB() {
     ifstream f(DB_FILE);
     if (!f) return;
@@ -592,13 +591,12 @@ void loadCharDB() {
         Character c;
         if (parseLine(line, c)) {
             charDB.add(c);
-            bst.insert(c); // BST dibangun dari seluruh database karakter
+            bst.insert(c);
         }
     }
     f.close();
 }
 
-// Load inventory dari file + rebuild struktur data
 void loadInventory() {
     ifstream f(INV_FILE);
     if (!f) return;
@@ -619,7 +617,6 @@ void loadInventory() {
 }
 
 
-// Parse satu baris "namaA|namaB" untuk graph combo
 bool parseGraphLine(const char* line, char* a, char* b) {
     char buf[256];
     strncpy(buf, line, 255);
@@ -631,7 +628,7 @@ bool parseGraphLine(const char* line, char* a, char* b) {
 
     tok = strtok(nullptr, "|");
     if (!tok) return false;
-    int len = strlen(tok);
+    size_t len = strlen(tok);
     if (len > 0 && tok[len-1] == '\n') tok[len-1] = '\0';
     if (len > 1 && tok[len-2] == '\r') tok[len-2] = '\0';
     strncpy(b, tok, 63); b[63] = '\0';
@@ -639,7 +636,6 @@ bool parseGraphLine(const char* line, char* a, char* b) {
     return true;
 }
 
-// Simpan seluruh relasi graph ke file (tanpa duplikat bidirectional)
 void saveGraph() {
     ofstream f(GRAPH_FILE);
     if (!f) return;
@@ -647,7 +643,6 @@ void saveGraph() {
     while (cur) {
         GraphEdge* e = cur->edges;
         while (e) {
-            // Simpan hanya satu arah untuk graph bidirectional
             if (strcmp(cur->name, e->target) < 0) {
                 f << cur->name << "|" << e->target << "\n";
             }
@@ -658,7 +653,6 @@ void saveGraph() {
     f.close();
 }
 
-// Load graph dari file combo_graph.txt
 void loadGraph() {
     ifstream f(GRAPH_FILE);
     if (!f) return;
@@ -672,14 +666,13 @@ void loadGraph() {
     f.close();
 }
 
-// Cek dan inisialisasi default graph jika file kosong
 void initDefaultGraph() {
     bool isEmpty = true;
     ifstream f(GRAPH_FILE);
     if (f) {
         char line[256];
         while (f.getline(line, 255)) {
-            int len = strlen(line);
+            size_t len = strlen(line);
             if (len > 0 && line[len-1] == '\r') line[len-1] = '\0';
             if (strlen(line) > 0) {
                 isEmpty = false;
@@ -688,28 +681,14 @@ void initDefaultGraph() {
         }
         f.close();
     }
-
-    if (isEmpty) {
-        // Isi default combo graph
-        graph.addEdge("Raiden Shogun", "Yae Miko");
-        graph.addEdge("Hu Tao", "Xingqiu");
-        graph.addEdge("Neuvillette", "Furina");
-        graph.addEdge("Nahida", "Raiden Shogun");
-        graph.addEdge("Kazuha", "Bennett");
-        saveGraph();
-    }
 }
 
-// ============================================================
-//                    SUMMON LOGIC
-// ============================================================
 void doSummon() {
     if (charDB.count == 0) {
         cout << "\n  [!] Database karakter kosong. Tambahkan via Admin Menu.\n";
         return;
     }
 
-    // Pisahkan 5 star dan 4 star dari database
     Character fiveStar[100]; int fiveCount = 0;
     Character fourStar[200]; int fourCount = 0;
 
@@ -720,20 +699,16 @@ void doSummon() {
             fourStar[fourCount++] = charDB.chars[i];
     }
 
-    // Tentukan rarity: 10% chance 5 star
     int roll = rand() % 100;
     Character picked;
     bool got5Star = false;
 
     if (roll < 10 && fiveCount > 0) {
-        // 5 Star
         picked = fiveStar[rand() % fiveCount];
         got5Star = true;
     } else if (fourCount > 0) {
-        // 4 Star
         picked = fourStar[rand() % fourCount];
     } else if (fiveCount > 0) {
-        // Fallback jika tidak ada 4 star
         picked = fiveStar[rand() % fiveCount];
         got5Star = true;
     } else {
@@ -741,7 +716,6 @@ void doSummon() {
         return;
     }
 
-    // Tampilkan animasi summon sederhana
     cout << "\n";
     printLine('*');
     cout << "  * SUMMON *\n";
@@ -755,15 +729,15 @@ void doSummon() {
     }
     cout << "  >> " << picked.name
          << " | " << picked.rarity
-         << " | " << picked.element << "\n";
+         << " | " << picked.element
+         << " | ATK " << picked.attack
+         << " | HP " << picked.hp << "\n";
 
-    // Masukkan ke semua struktur data
     inventory.append(picked);
     undoStack.push(picked);
     hashTable.insert(picked);
-    addToSummonHistory(picked); // Simpan riwayat summon ke queue FIFO
+    addToSummonHistory(picked);
 
-    // Update statistik
     stats.totalSummon++;
     if (got5Star) stats.total5Star++;
     else          stats.total4Star++;
@@ -774,18 +748,12 @@ void doSummon() {
     cout << "\n";
 }
 
-// ============================================================
-//              SORTING MANUAL (Bubble Sort)
-// ============================================================
-
-// Tukar dua Character
 void swapChar(Character& a, Character& b) {
     Character tmp = a;
     a = b;
     b = tmp;
 }
 
-// Bubble sort by name (ascending)
 void sortByName(Character* arr, int n) {
     for (int i = 0; i < n-1; i++)
         for (int j = 0; j < n-i-1; j++)
@@ -793,7 +761,6 @@ void sortByName(Character* arr, int n) {
                 swapChar(arr[j], arr[j+1]);
 }
 
-// Bubble sort by rarity (5 Star dulu, lalu 4 Star)
 void sortByRarity(Character* arr, int n) {
     for (int i = 0; i < n-1; i++)
         for (int j = 0; j < n-i-1; j++)
@@ -801,32 +768,31 @@ void sortByRarity(Character* arr, int n) {
                 swapChar(arr[j], arr[j+1]);
 }
 
-// Tampilkan array character
 void displayArray(Character* arr, int n) {
     if (n == 0) { cout << "  (kosong)\n"; return; }
     for (int i = 0; i < n; i++) {
         cout << "  " << i+1 << ". " << arr[i].name
              << " | " << arr[i].rarity
-             << " | " << arr[i].element << "\n";
+             << " | " << arr[i].element
+             << " | ATK " << arr[i].attack
+             << " | HP " << arr[i].hp << "\n";
     }
 }
 
-// Helper untuk mengubah karakter ASCII ke lowercase tanpa STL
 char toLowerChar(char c) {
     if (c >= 'A' && c <= 'Z') return c + ('a' - 'A');
     return c;
 }
 
-// Helper untuk mencari substring tanpa memperhatikan case
 bool stringContainsIgnoreCase(const char* haystack, const char* needle) {
     if (!haystack || !needle) return false;
-    int lenHay = strlen(haystack);
-    int lenNeedle = strlen(needle);
+    size_t lenHay = strlen(haystack);
+    size_t lenNeedle = strlen(needle);
     if (lenNeedle == 0 || lenHay == 0) return false;
 
     char lowerHay[128];
     char lowerNeedle[128];
-    int i;
+    size_t i;
 
     for (i = 0; i < lenHay && i < 127; i++)
         lowerHay[i] = toLowerChar(haystack[i]);
@@ -839,17 +805,56 @@ bool stringContainsIgnoreCase(const char* haystack, const char* needle) {
     return strstr(lowerHay, lowerNeedle) != nullptr;
 }
 
-// Cari semua karakter inventory yang mengandung keyword dan simpan hasilnya
+bool equalsIgnoreCase(const char* a, const char* b) {
+    int i = 0;
+    while (a[i] != '\0' && b[i] != '\0') {
+        char ca = a[i]; if (ca >= 'A' && ca <= 'Z') ca += 'a' - 'A';
+        char cb = b[i]; if (cb >= 'A' && cb <= 'Z') cb += 'a' - 'A';
+        if (ca != cb) return false;
+        i++;
+    }
+    return a[i] == '\0' && b[i] == '\0';
+}
+
+bool nameAlreadyAdded(const char names[][64], int count, const char* name) {
+    for (int i = 0; i < count; i++) {
+        if (equalsIgnoreCase(names[i], name)) return true;
+    }
+    return false;
+}
+
+//sorting
+void sortByAttack(Character* arr, int n) {
+    for (int i = 0; i < n-1; i++) {
+        for (int j = 0; j < n-i-1; j++) {
+            if (arr[j].attack < arr[j+1].attack) {
+                swapChar(arr[j], arr[j+1]);
+            }
+        }
+    }
+}
+
+//searching
 void searchInventoryByKeyword(const char* keyword, Character* results, int& resultCount) {
     resultCount = 0;
     if (strlen(keyword) == 0) return;
+
+    char addedNames[500][64];
+    int addedCount = 0;
 
     for (int i = 0; i < HASH_SIZE; i++) {
         HashNode* cur = hashTable.table[i];
         while (cur) {
             if (stringContainsIgnoreCase(cur->data.name, keyword)) {
-                if (resultCount < 500) {
-                    results[resultCount++] = cur->data;
+                if (!nameAlreadyAdded(addedNames, addedCount, cur->data.name)) {
+                    if (resultCount < 500) {
+                        results[resultCount++] = cur->data;
+                        if (addedCount < 500) {
+                            strncpy(addedNames[addedCount], cur->data.name, 63);
+                            addedNames[addedCount][63] = '\0';
+                            addedCount++;
+                        }
+                    }
                 }
             }
             cur = cur->next;
@@ -857,11 +862,13 @@ void searchInventoryByKeyword(const char* keyword, Character* results, int& resu
     }
 }
 
-// Search character di inventory menggunakan hash table existing
 void menuSearchCharacter() {
     clearScreen();
     printTitle("SEARCH CHARACTER");
     cout << "\n  Masukkan keyword: ";
+
+    cin.ignore(1000, '\n');
+
     char keyword[64];
     readLine(keyword, 64);
 
@@ -873,17 +880,28 @@ void menuSearchCharacter() {
         return;
     }
 
-    Character matches[500];
-    int matchCount = 0;
-    searchInventoryByKeyword(keyword, matches, matchCount);
-
-    if (matchCount == 0) {
-        cout << "  Character tidak ditemukan.\n";
+    Character* exactMatch = hashTable.searchIgnoreCase(keyword);
+    if (exactMatch) {
+        cout << "  Exact match found:\n";
+        cout << "    " << exactMatch->name
+             << " | " << exactMatch->rarity
+             << " | " << exactMatch->element
+             << " | ATK " << exactMatch->attack
+             << " | HP " << exactMatch->hp << "\n";
     } else {
-        for (int i = 0; i < matchCount; i++) {
-            cout << "  " << i+1 << ". " << matches[i].name
-                 << " | " << matches[i].rarity
-                 << " | " << matches[i].element << "\n";
+        Character matches[500];
+        int matchCount = 0;
+        searchInventoryByKeyword(keyword, matches, matchCount);
+        if (matchCount == 0) {
+            cout << "  Character tidak ditemukan.\n";
+        } else {
+            for (int i = 0; i < matchCount; i++) {
+                cout << "  " << i+1 << ". " << matches[i].name
+                     << " | " << matches[i].rarity
+                     << " | " << matches[i].element
+                     << " | ATK " << matches[i].attack
+                     << " | HP " << matches[i].hp << "\n";
+            }
         }
     }
 
@@ -891,13 +909,14 @@ void menuSearchCharacter() {
     cin.get();
 }
 
-// Print inventory dalam urutan summon terbaru ke terlama
 void displayInventoryByDateRec(ListNode* node, int& idx) {
     if (!node) return;
     displayInventoryByDateRec(node->next, idx);
     cout << "  " << idx++ << ". " << node->data.name
          << " | " << node->data.rarity
-         << " | " << node->data.element << "\n";
+         << " | " << node->data.element
+         << " | ATK " << node->data.attack
+         << " | HP " << node->data.hp << "\n";
 }
 
 void displayInventoryByDate() {
@@ -909,7 +928,6 @@ void displayInventoryByDate() {
     displayInventoryByDateRec(inventory.head, idx);
 }
 
-// Kumpulkan semua karakter dari BST secara inorder
 void collectArchiveInOrder(BSTNode* node, Character* arr, int& n) {
     if (!node) return;
     collectArchiveInOrder(node->left, arr, n);
@@ -932,7 +950,11 @@ void displayArchiveByElement() {
                     cout << "\n===== " << element << " =====\n";
                     printed = true;
                 }
-                cout << "  " << arr[i].name << "\n";
+                cout << "  " << arr[i].name
+                     << " | " << arr[i].rarity
+                     << " | " << arr[i].element
+                     << " | ATK " << arr[i].attack
+                     << " | HP " << arr[i].hp << "\n";
             }
         }
     }
@@ -953,20 +975,19 @@ void displayArchiveByRarity() {
                     cout << "\n===== " << rarity << " =====\n";
                     printed = true;
                 }
-                cout << "  " << arr[i].name << "\n";
+                cout << "  " << arr[i].name
+                     << " | " << arr[i].rarity
+                     << " | " << arr[i].element
+                     << " | ATK " << arr[i].attack
+                     << " | HP " << arr[i].hp << "\n";
             }
         }
     }
 }
 
-// ============================================================
-//                    MENU FUNCTIONS
-// ============================================================
-
 void clearScreen();
 void menuSummon10x();
 
-// --- 1. Summon (Single) ---
 void menuSummonSingle() {
     printTitle("SUMMON 1x");
     cout << "\n  Tekan ENTER untuk summon...\n";
@@ -977,7 +998,6 @@ void menuSummonSingle() {
     cin.get();
 }
 
-// --- 1. Summon Menu ---
 void menuSummon() {
     while (true) {
         clearScreen();
@@ -1009,7 +1029,6 @@ void menuSummon() {
     }
 }
 
-// --- 5. Character Archive (BST) ---
 void menuCharacterArchive() {
     printTitle("CHARACTER ARCHIVE");
 
@@ -1054,7 +1073,6 @@ void menuCharacterArchive() {
     cin.get();
 }
 
-// --- 6. Character Combo (Graph) ---
 void menuCharacterCombo() {
     printTitle("CHARACTER COMBO");
     cout << "\n  1. View All Combo\n";
@@ -1071,6 +1089,9 @@ void menuCharacterCombo() {
         }
         case 2: {
             cout << "\n  Character Name: ";
+
+            cin.ignore(1000, '\n');
+
             char name[64];
             readLine(name, 64);
             
@@ -1078,16 +1099,18 @@ void menuCharacterCombo() {
                 bool found = false;
                 GraphNode* cur = graph.head;
                 while (cur) {
-                    if (strcmp(cur->name, name) == 0) { found = true; break; }
+                    if (equalsIgnoreCase(cur->name, name)) { found = true; break; }
                     cur = cur->next;
                 }
                 if (!found) {
                     cout << "\n  [!] Character tidak ditemukan di combo database.\n";
                 } else {
-                    cout << "\n  == Team Compatibility ==\n";
-                    char visited[200][64];
-                    int visCount = 0;
-                    graph.dfsDisplay(name, visited, visCount);
+                    if (pilih == 2) {
+                        cout << "\n  -- Combo Team for " << cur->name << " --\n";
+                        char visited[500][64];
+                        int visCount = 0;
+                        graph.dfsDisplay(cur->name, visited, visCount);
+                    }
                 }
             }
             break;
@@ -1101,7 +1124,7 @@ void menuCharacterCombo() {
     cin.get();
 }
 
-// --- 8. Undo Last Summon ---
+//stack
 void menuUndoSummon() {
     printTitle("UNDO LAST SUMMON");
 
@@ -1118,22 +1141,18 @@ void menuUndoSummon() {
 
     cout << "\n  Menghapus: " << last.name
          << " | " << last.rarity
-         << " | " << last.element << "\n";
+         << " | " << last.element
+         << " | ATK " << last.attack
+         << " | HP " << last.hp << "\n";
 
-    // Hapus dari inventory linked list (node terakhir)
     inventory.removeLast();
 
-    // Hapus dari hash table
     hashTable.remove(last.name);
 
-    // Character Archive tetap berisi seluruh database, tidak dihapus saat undo
-
-    // Update statistik
     stats.totalSummon--;
     if (strcmp(last.rarity, "5 Star") == 0) stats.total5Star--;
     else stats.total4Star--;
 
-    // Simpan ulang file
     saveInventory();
 
     cout << "  Undo berhasil!\n";
@@ -1142,7 +1161,6 @@ void menuUndoSummon() {
     cin.get();
 }
 
-// --- Inventory Submenu ---
 void menuInventory() {
     int pilih = 0;
     while (true) {
@@ -1151,8 +1169,10 @@ void menuInventory() {
         cout << "\n  1. Sort by Date\n";
         cout << "  2. Sort by Name\n";
         cout << "  3. Sort by Rarity\n";
-        cout << "  4. Search Character\n";
-        cout << "  5. Back\n";
+        cout << "  4. Sort by Attack\n";
+        cout << "  5. Search Character\n";
+        cout << "  6. Strongest Character\n";
+        cout << "  7. Back\n";
         cout << "\n  Pilih: ";
         cin >> pilih;
 
@@ -1202,10 +1222,55 @@ void menuInventory() {
                 cin.get();
                 break;
             }
-            case 4:
+            case 4: {
+                Character arr[500];
+                int n;
+                inventory.toArray(arr, n);
+                clearScreen();
+                printTitle("SORTED BY ATTACK");
+                cout << "\n";
+                if (n == 0) {
+                    cout << "  Inventory kosong.\n";
+                } else {
+                    sortByAttack(arr, n);
+                    displayArray(arr, n);
+                }
+                cout << "\n  Tekan ENTER untuk kembali...";
+                cin.ignore(1000, '\n');
+                cin.get();
+                break;
+            }
+            case 5:
                 menuSearchCharacter();
                 break;
-            case 5:
+            case 6: {
+                clearScreen();
+                printTitle("STRONGEST CHARACTER");
+                Character best;
+                bool found = false;
+                ListNode* cur = inventory.head;
+                while (cur) {
+                    if (!found || cur->data.attack > best.attack) {
+                        best = cur->data;
+                        found = true;
+                    }
+                    cur = cur->next;
+                }
+                if (!found) {
+                    cout << "  Inventory kosong.\n";
+                } else {
+                    cout << "  " << best.name
+                         << " | " << best.rarity
+                         << " | " << best.element
+                         << " | ATK " << best.attack
+                         << " | HP " << best.hp << "\n";
+                }
+                cout << "\n  Tekan ENTER untuk kembali...";
+                cin.ignore(1000, '\n');
+                cin.get();
+                break;
+            }
+            case 7:
                 return;
             default:
                 cout << "\n  Pilihan tidak valid.\n";
@@ -1215,7 +1280,6 @@ void menuInventory() {
     }
 }
 
-// --- Character Features Submenu ---
 void menuCharacterFeatures() {
     int pilih = 0;
     while (true) {
@@ -1245,14 +1309,13 @@ void menuCharacterFeatures() {
     }
 }
 
-// --- 9. Statistics ---
 void menuStatistics() {
     int pilih = 0;
     while (true) {
         clearScreen();
         printTitle("STATISTICS");
         cout << "\n  1. View Statistics\n";
-        cout << "  2. Summon History Queue\n";
+        cout << "  2. Summon History\n";
         cout << "  3. Back\n";
         cout << "\n  Pilih: ";
         cin >> pilih;
@@ -1265,6 +1328,32 @@ void menuStatistics() {
                 cout << "  Total Summon  : " << stats.totalSummon << "\n";
                 cout << "  Total 5 Star  : " << stats.total5Star << "\n";
                 cout << "  Total 4 Star  : " << stats.total4Star << "\n";
+
+                if (inventory.head) {
+                    int totalAtk = 0;
+                    int totalHp = 0;
+                    int count = 0;
+                    Character best;
+                    ListNode* cur = inventory.head;
+                    while (cur) {
+                        totalAtk += cur->data.attack;
+                        totalHp += cur->data.hp;
+                        if (count == 0 || cur->data.attack > best.attack) {
+                            best = cur->data;
+                        }
+                        count++;
+                        cur = cur->next;
+                    }
+                    cout << "  Highest ATK   : " << best.name
+                         << " | ATK " << best.attack
+                         << " | HP " << best.hp << "\n";
+                    cout << "  Avg Attack    : " << (count > 0 ? (totalAtk / count) : 0) << "\n";
+                    cout << "  Avg HP        : " << (count > 0 ? (totalHp / count) : 0) << "\n";
+                } else {
+                    cout << "  Highest ATK   : -\n";
+                    cout << "  Avg Attack    : 0\n";
+                    cout << "  Avg HP        : 0\n";
+                }
 
                 // Hitung persentase
                 if (stats.totalSummon > 0) {
@@ -1292,9 +1381,6 @@ void menuStatistics() {
     }
 }
 
-// ============================================================
-//                      ADMIN MENU
-// ============================================================
 void adminAddCharacter() {
     printTitle("ADD CHARACTER");
     char name[64], rarity[16], element[32];
@@ -1318,8 +1404,14 @@ void adminAddCharacter() {
     strncpy(c.element, element, 31);
     c.name[63] = c.rarity[15] = c.element[31] = '\0';
 
+    cout << "  Attack : ";
+    cin >> c.attack;
+
+    cout << "  HP     : ";
+    cin >> c.hp;
+
     charDB.add(c);
-    bst.insert(c); // Tambahkan ke archive global juga
+    bst.insert(c);
     saveCharDB();
 
     cout << "\n  Character berhasil ditambahkan!\n";
@@ -1350,15 +1442,6 @@ void adminAddCharacterCombo() {
     cin.get();
 }
 
-void adminViewCharacterCombo() {
-    clearScreen();
-    printTitle("CHARACTER COMBO DATABASE");
-    cout << "\n  == Relasi Combo ==\n";
-    graph.display();
-    cout << "\n  Tekan ENTER untuk kembali...";
-    cin.ignore(1000, '\n');
-    cin.get();
-}
 
 void adminMenu() {
     int pilih = 0;
@@ -1367,11 +1450,9 @@ void adminMenu() {
         printTitle("ADMIN MENU");
         cout << "\n";
         cout << "  1. Add Character\n";
-        cout << "  2. View Character Database\n";
-        cout << "  3. Add Character Combo\n";
-        cout << "  4. View Combo Database\n";
-        cout << "  5. Undo Last Summon\n";
-        cout << "  6. Back\n";
+        cout << "  2. Add Character Combo\n";
+        cout << "  3. Undo Last Summon\n";
+        cout << "  4. Back\n";
         cout << "\n  Pilih: ";
         cin >> pilih;
 
@@ -1380,24 +1461,12 @@ void adminMenu() {
                 adminAddCharacter();
                 break;
             case 2:
-                clearScreen();
-                printTitle("CHARACTER DATABASE");
-                cout << "\n  Total: " << charDB.count << " character\n\n";
-                charDB.display();
-                cout << "\n  Tekan ENTER untuk kembali...";
-                cin.ignore(1000, '\n');
-                cin.get();
-                break;
-            case 3:
                 adminAddCharacterCombo();
                 break;
-            case 4:
-                adminViewCharacterCombo();
-                break;
-            case 5:
+            case 3:
                 menuUndoSummon();
                 break;
-            case 6:
+            case 4:
                 return;
             default:
                 cout << "\n  Pilihan tidak valid.\n";
@@ -1410,6 +1479,7 @@ void adminMenu() {
 void menuAdmin() {
     char pass[64];
     cout << "\n  Masukkan Password Admin: ";
+    cin.ignore(1000, '\n');
     readLine(pass, 64);
 
     if (strcmp(pass, ADMIN_PASS) == 0) {
@@ -1422,9 +1492,6 @@ void menuAdmin() {
     }
 }
 
-// ============================================================
-//                       MAIN MENU
-// ============================================================
 void showMainMenu() {
     clearScreen();
     printTitle("GENSHIN GACHA SYSTEM");
@@ -1439,16 +1506,10 @@ void showMainMenu() {
     cout << "\n  Pilih menu: ";
 }
 
-// Forward declare Summon 10x menu (defined below)
-void menuSummon10x();
 
-// ============================================================
-//                          MAIN
-// ============================================================
 int main() {
     srand((unsigned)time(nullptr));
 
-    // Load semua data dari file
     loadCharDB();
     loadInventory();
     loadGraph();
@@ -1478,10 +1539,8 @@ int main() {
     return 0;
 }
 
-// Helper: perform a single summon without immediate console animation
-// Returns picked Character in 'picked' and whether it's 5-star in 'got5Star'
+
 void summonSingle(Character &picked, bool &got5Star) {
-    // Prepare pools
     Character fiveStar[100]; int fiveCount = 0;
     Character fourStar[200]; int fourCount = 0;
 
@@ -1511,19 +1570,25 @@ void summonSingle(Character &picked, bool &got5Star) {
         return;
     }
 
-    // Store into global structures
     inventory.append(picked);
     undoStack.push(picked);
     hashTable.insert(picked);
-    addToSummonHistory(picked); // Simpan riwayat summon ke queue FIFO
+    addToSummonHistory(picked);
 
     stats.totalSummon++;
     if (got5Star) stats.total5Star++; else stats.total4Star++;
 }
 
-// --- New: Summon 10x ---
 void menuSummon10x() {
     printTitle("SUMMON 10x");
+    if (charDB.count == 0) {
+        cout << "\n  [!] Database karakter kosong. Tambahkan karakter lewat Admin Menu.\n";
+        cout << "\n  Tekan ENTER untuk kembali...";
+        cin.ignore(1000, '\n');
+        cin.get();
+        return;
+    }
+
     cout << "\n  Prepare 10 wishes...\n";
     cout << "  Press ENTER to begin...";
     cin.ignore(1000, '\n');
@@ -1532,17 +1597,15 @@ void menuSummon10x() {
     Queue results;
     cout << "\n  Summoning";
     for (int i = 0; i < 10; i++) {
-        // simple spinner animation
-        cout << "."; fflush(stdout);
+        cout << "." << flush;
         Character picked; bool got5 = false;
         summonSingle(picked, got5);
         results.enqueue(picked);
     }
     cout << "\n\n  Done! Displaying results...\n\n";
 
-    // Persist after batch
+
     saveInventory();
-    // Move results from queue into array for navigation
     Character arr[10]; int n = 0;
     Character tmp;
     while (!results.isEmpty() && n < 10) {
@@ -1550,7 +1613,6 @@ void menuSummon10x() {
         arr[n++] = tmp;
     }
 
-    // Navigation
     int idx = 0;
     char cmd[8];
     auto showEntry = [&](int i){
@@ -1560,10 +1622,8 @@ void menuSummon10x() {
         cout << arr[i].name << " | " << arr[i].rarity << " | " << arr[i].element << "\n";
     };
 
-    // show first
     showEntry(idx);
-    cout << "\n  Commands: n=next, p=prev, a=all, q=quit\n";
-    // flush any leftover newline once
+    cout << "\n  Commands: n=next, a=all, q=quit\n";
     cin.ignore(1000, '\n');
     while (true) {
         cout << "  > ";
@@ -1571,16 +1631,13 @@ void menuSummon10x() {
         if (cmd[0] == 'n') {
             if (idx+1 < n) { idx++; showEntry(idx); }
             else cout << "  (end of results)\n";
-        } else if (cmd[0] == 'p') {
-            if (idx-1 >= 0) { idx--; showEntry(idx); }
-            else cout << "  (start of results)\n";
         } else if (cmd[0] == 'a') {
             cout << "\n  -- All Results --\n";
             for (int i = 0; i < n; i++) showEntry(i);
         } else if (cmd[0] == 'q') {
             break;
         } else {
-            cout << "  Unknown command. Use n/p/a/q.\n";
+            cout << "  Unknown command. Use n/a/q.\n";
         }
     }
 

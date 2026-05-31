@@ -1,25 +1,25 @@
-Raiden Shogun|5 Star|Electro
-Hu Tao|5 Star|Pyro
-Ganyu|5 Star|Cryo
-Zhongli|5 Star|Geo
-Venti|5 Star|Anemo
-Kazuha|5 Star|Anemo
-Ayaka|5 Star|Cryo
-Nahida|5 Star|Dendro
-Furina|5 Star|Hydro
-Neuvillette|5 Star|Hydro
-Xingqiu|4 Star|Hydro
-Yae Miko|5 Star|Electro
-Bennett|4 Star|Pyro
-Fischl|4 Star|Electro
-Xiangling|4 Star|Pyro
-Sucrose|4 Star|Anemo
-Beidou|4 Star|Electro
-Noelle|4 Star|Geo
-Razor|4 Star|Electro
-Chongyun|4 Star|Cryo
-Diona|4 Star|Cryo
-Yanfei|4 Star|Pyro
-Rosaria|4 Star|Cryo
-Thoma|4 Star|Pyro
-Sayu|4 Star|Anemo
+Raiden Shogun|5 Star|Electro|4820|23800
+Hu Tao|5 Star|Pyro|4510|21950
+Ganyu|5 Star|Cryo|4375|20500
+Zhongli|5 Star|Geo|3950|24900
+Venti|5 Star|Anemo|4010|18750
+Kazuha|5 Star|Anemo|4280|19800
+Ayaka|5 Star|Cryo|4460|21400
+Nahida|5 Star|Dendro|3890|17650
+Furina|5 Star|Hydro|4175|19200
+Neuvillette|5 Star|Hydro|4990|24100
+Xingqiu|4 Star|Hydro|2480|12600
+Yae Miko|5 Star|Electro|4630|20800
+Bennett|4 Star|Pyro|2890|13850
+Fischl|4 Star|Electro|2710|11900
+Xiangling|4 Star|Pyro|2940|13250
+Sucrose|4 Star|Anemo|2140|9800
+Beidou|4 Star|Electro|2760|14500
+Noelle|4 Star|Geo|2320|14950
+Razor|4 Star|Electro|2850|13600
+Chongyun|4 Star|Cryo|2410|11750
+Diona|4 Star|Cryo|1980|14300
+Yanfei|4 Star|Pyro|2670|12100
+Rosaria|4 Star|Cryo|2590|12800
+Thoma|4 Star|Pyro|2230|14750
+Sayu|4 Star|Anemo|2050|13500
